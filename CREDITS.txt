@@ -1,0 +1,190 @@
+Arcane Duel Chronicles - Audio credits
+======================================
+
+Music and sound effects
+-----------------------
+All music and sound effects in this game are ORIGINAL and PROCEDURAL.
+They are composed and synthesised in real time by JavaScript code using the
+browser's Web Audio API (oscillators, filtered noise and envelopes), written
+specifically for Arcane Duel Chronicles.
+
+- No audio files, samples or recordings are included or downloaded.
+- No third-party music or sound libraries are used.
+- No music from Yu-Gi-Oh!, any anime or any other copyrighted work is used,
+  quoted or imitated.
+
+Source: i_audio.js section of index.html (embedded in the game file)
+Author: Arcane Duel Chronicles project (generated for the game owner)
+Licence: owned by the game owner, together with the rest of the game code.
+No third-party attribution is required.
+
+Tracks (all procedural, original compositions, seamless loops; v6c revamp)
+  Chronicles Overture  - 142 BPM, E major. J-rock/electronic: full drum kit, synth bass, distorted power chords,
+                         supersaw + guitar-style lead, chord stabs. Menu, character select, deck builder.
+  Duel Standby         - 132 BPM, E minor. Electronic rock: brass lead, pulse arps, synth bass, power chords.
+                         Default duel theme (Athletics Stadium and any unmapped arena).
+  Banner of the Dawn   - 118 BPM, C major. Orchestral march: brass, string ostinato, timpani, glockenspiel.
+                         Kaito's castle, Toma's forest.
+  Ember Lair           - 144 BPM, A Phrygian dominant. Dragon metal: chugging guitars, choir, brass hits, toms.
+                         Ryuga's dragon lair.
+  Neon Circuit         - 128 BPM, D Dorian. Synthwave/EDM: arps, pumping saw pads, clap, pulse/supersaw leads.
+                         Mira's machine world, Ben's robot hangar, Weisheng's racetrack, Clement's hobby con.
+  Doki Doki Toybox     - 120 BPM, F major (swing). Music box, flute, marimba, pizzicato plucks, shaker.
+                         Lily's fairy lake, Wei Yao's idol stage, Sabrina's toy town, Keith's cat cafe.
+  Moonlit Arcana       - 96 BPM, A minor. Harp arpeggios, choir pads, flute, violin, frame drum.
+                         Sakura's magician room, Si Xing's silent theatre.
+  Blood Moon Rite      - 100 BPM, D minor. Melancholic duel: piano lead, string ensemble, choir, low bass,
+                         restrained drums with crash swells, hopeful-but-sad bridge. Eryll's Nemesis Coliseum.
+  Kopi Break           - 100 BPM, G major (swing). Lo-fi jazz: FM electric piano 7th chords, walking upright bass,
+                         brushes and ride, muted trumpet, vibraphone. Christopher's kopitiam, Lemon's cubicle hell.
+Jingles: ace-entrance stinger, victory, defeat, duel start, coin toss.
+Style references named by the player were used for genre, mood, tempo and instrumentation only; no melody,
+chord sequence or riff from any existing work was copied or approximated.
+
+Video clips
+-----------
+The summon/victory video clips (assets/video) carry their own audio, generated
+for this project. Game music is lowered while a clip plays.
+
+Online multiplayer
+==================
+Online duels use PeerJS 1.5.5 (https://peerjs.com, https://github.com/peers/peerjs),
+bundled (minified, unmodified) inside index.html. Licence: MIT.
+PeerJS's bundle also contains these libraries:
+  - webrtc-adapter 9.0.6 (BSD-3-Clause)
+  - eventemitter3 4.0.7 (MIT)
+  - peerjs-js-binarypack 2.1.0 (MIT)
+  - sdp 3.2.2 (MIT)
+Their full licence texts follow below.
+
+Online services used at run time (free, no account):
+  - PeerJS public cloud signalling server 0.peerjs.com (run by the PeerJS project).
+    It only introduces the two browsers to each other. Game data then flows
+    directly between the players over an encrypted WebRTC data channel.
+  - Public STUN servers: stun.l.google.com, stun1.l.google.com, stun.cloudflare.com.
+  - PeerJS's public best-effort TURN relay (eu-0/us-0.turn.peerjs.com), used only
+    when a direct connection is impossible.
+
+---------------- peerjs 1.5.5 : LICENSE ----------------
+Copyright (c) 2015 Michelle Bu and Eric Zhang, http://peerjs.com
+
+(The MIT License)
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---------------- webrtc-adapter 9.0.6 : LICENSE.md ----------------
+Copyright (c) 2014, The WebRTC project authors. All rights reserved.
+Copyright (c) 2018, The adapter.js project authors. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+  * Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+
+  * Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in
+    the documentation and/or other materials provided with the
+    distribution.
+
+  * Neither the name of Google nor the names of its contributors may
+    be used to endorse or promote products derived from this software
+    without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---------------- eventemitter3 4.0.7 : LICENSE ----------------
+The MIT License (MIT)
+
+Copyright (c) 2014 Arnout Kazemier
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---------------- peerjs-js-binarypack 2.1.0 : LICENSE ----------------
+Copyright (c) 2012 Eric Zhang, http://binaryjs.com
+
+(The MIT License)
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+---------------- sdp 3.2.2 : LICENSE ----------------
+Copyright (c) 2017 Philipp Hancke
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+

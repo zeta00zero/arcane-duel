@@ -1,0 +1,39 @@
+Arcane Duel Chronicles - How to play online
+===========================================
+
+1. Both players open the same game page (the same version of the game).
+   Use the web link (itch.io / Netlify / GitHub Pages). It also works when the game is
+   opened straight from the downloaded file (index.html) in a desktop browser
+   (tested with Chrome/Chromium).
+2. Player 1: Main menu > ONLINE DUEL > type your name > Create Room.
+   You get a 6-character room code. Press "Copy code" (or "Copy invite link") and send
+   it to your friend in any chat app.
+3. Player 2: Main menu > ONLINE DUEL > type your name > enter the code > Join Room.
+   (An invite link opens the Join screen with the code already filled in.)
+4. Each player picks a duelist and a deck (Default, or the Custom deck saved in the
+   Deck Builder). The room creator (the host) also picks the arena (home arena of either
+   duelist, random, or a fixed arena) and an optional turn timer (90 or 120 seconds).
+   Press Ready. The duel starts when both players are ready.
+
+During the duel
+- Your side is always at the bottom. Play exactly like single-player: drag & drop or click.
+- When your opponent attacks, summons or plays a spell and you have a usable Set
+  Quick-Play or Trap, you get the "Activate a Quick-Play?" prompt. You have 25 seconds;
+  after that the game answers "Don't activate" for you. Your opponent sees "Waiting...".
+- Quick chat buttons: Good luck!, Nice move!, Oops!, Well played!, Hmm..., GG.
+- Surrender: the Surrender button under the quick chat. Leaving the duel also forfeits.
+- After the duel: Rematch (both players press it), Change Duelist, or Leave Room.
+
+Connection problems
+- If a connection drops, the game reconnects by itself. If you closed or reloaded the
+  page, open ONLINE DUEL again and join the same room code within 60 seconds. The duel
+  continues where it was. After 60 seconds, the player who stayed wins by forfeit.
+- The host (the player who created the room) must keep their page open. If the host's
+  page is closed, the duel ends.
+- Some networks (strict company or school networks, some mobile carriers) block direct
+  connections. The game then tries a free public relay. If joining keeps failing, try
+  another network (for example a phone hotspot), or enter your own TURN relay under
+  ONLINE DUEL > Connection settings.
+
+Privacy: no account and no sign-in. The free PeerJS server only sees the random room id.
+Your duel data goes directly from browser to browser.
