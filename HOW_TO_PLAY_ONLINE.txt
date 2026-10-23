@@ -34,6 +34,14 @@ Connection problems
   connections. The game then tries a free public relay. If joining keeps failing, try
   another network (for example a phone hotspot), or enter your own TURN relay under
   ONLINE DUEL > Connection settings.
+- Under the quick chat buttons the game shows the connection: "Connected · room CODE · 45 ms".
+  The number is the round trip between the two browsers. Up to about 150 ms feels normal.
+  "via relay" (shown in orange) means a direct connection was not possible and the duel
+  traffic goes through a relay server, which can be far away and adds delay. A different
+  network (for example home Wi-Fi instead of mobile data), or your own TURN relay close to
+  you (Connection settings), usually fixes that.
+- The first visit downloads the whole game (about 11 MB). On a slow connection the
+  loading screen can take a while; later visits are faster.
 
 Privacy: no account and no sign-in. The free PeerJS server only sees the random room id.
 Your duel data goes directly from browser to browser.

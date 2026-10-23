@@ -18,26 +18,41 @@ Author: Arcane Duel Chronicles project (generated for the game owner)
 Licence: owned by the game owner, together with the rest of the game code.
 No third-party attribution is required.
 
-Tracks (all procedural, original compositions, seamless loops; v6c revamp)
-  Chronicles Overture  - 142 BPM, E major. J-rock/electronic: full drum kit, synth bass, distorted power chords,
-                         supersaw + guitar-style lead, chord stabs. Menu, character select, deck builder.
-  Duel Standby         - 132 BPM, E minor. Electronic rock: brass lead, pulse arps, synth bass, power chords.
+Tracks (all procedural, original compositions, seamless loops; v9c/v9d epic guitar-rock revamp)
+All nine themes share one synthesized rock rig: double-tracked distorted rhythm guitars (WaveShaper amp +
+cab EQ with cached curves), lead guitar with slides, bends and vibrato, clean/crunch arpeggio guitar,
+rock bass, rock kit, strings, choir and brass. Every melody, riff and progression is original.
+  Chronicles Overture  - 150 BPM, E (v9c epic rock rewrite). Synthesized distorted guitars (double-tracked
+                         power chords and palm-muted chugs, WaveShaper amp + cab EQ), lead guitar with slides,
+                         bends and vibrato, twin-lead final chorus, driving bass, rock kit with tom fills,
+                         strings/choir build-ups. Menu, character select, deck builder.
+  Duel Standby         - 140 BPM, F# minor (v9d). Driving battle rock: syncopated riff, crunchy verse lead over
+                         clean arpeggios, build, big chorus, half-time breakdown, guitar solo ending in twin harmony.
                          Default duel theme (Athletics Stadium and any unmapped arena).
-  Banner of the Dawn   - 118 BPM, C major. Orchestral march: brass, string ostinato, timpani, glockenspiel.
-                         Kaito's castle, Toma's forest.
-  Ember Lair           - 144 BPM, A Phrygian dominant. Dragon metal: chugging guitars, choir, brass hits, toms.
-                         Ryuga's dragon lair.
-  Neon Circuit         - 128 BPM, D Dorian. Synthwave/EDM: arps, pumping saw pads, clap, pulse/supersaw leads.
-                         Mira's machine world, Ben's robot hangar, Weisheng's racetrack, Clement's hobby con.
-  Doki Doki Toybox     - 120 BPM, F major (swing). Music box, flute, marimba, pizzicato plucks, shaker.
-                         Lily's fairy lake, Wei Yao's idol stage, Sabrina's toy town, Keith's cat cafe.
-  Moonlit Arcana       - 96 BPM, A minor. Harp arpeggios, choir pads, flute, violin, frame drum.
+  Banner of the Dawn   - 108 BPM, Bb major (v9d). Heroic power-metal march: brass fanfare and timpani intro,
+                         twin-lead march, choir + brass chorus, triumphant fanfare section.
+                         Kaito's castle, Toma's forest, Shaim's rift peaks, Aoi Yuki's concert stage.
+  Ember Lair           - 168 BPM, A Phrygian dominant (v9d). Dragon thrash metal: low-tuned gallop riffs,
+                         double-kick chorus with choir, shred solo, twin-lead final chorus. Ryuga's dragon lair.
+  Neon Circuit         - 126 BPM, C Dorian (v9d). Synthwave cyber-rock: pulse-synth melody and pluck arps over
+                         djent-style chugs, guitar + supersaw chorus hook, breakdown, synth/guitar trade-off.
+                         Mira's machine world, Ben's robot hangar, Weisheng's racetrack, Clement's hobby con, Jason's pawnshop alley.
+  Doki Doki Toybox     - 168 BPM, F major (v9d). Cute pop-punk toy box: bright light-crunch guitars, music box
+                         and glockenspiel, marimba/flute bridge over clean arpeggios, twin-lead final chorus.
+                         Lily's fairy lake, Wei Yao's idol stage, Sabrina's toy town, Keith's cat cafe,
+                         Wei Yao - The 2nd Coming's derby dome, Kimberly's cosplay stage.
+  Moonlit Arcana       - 96 BPM, D minor in 6/8 (v9d). Mystic symphonic rock: harp and choir intro, flute omen,
+                         6/8 rock ride, choir climax with twin lead in harmonic minor, violin moonfall.
                          Sakura's magician room, Si Xing's silent theatre.
-  Blood Moon Rite      - 100 BPM, D minor. Melancholic duel: piano lead, string ensemble, choir, low bass,
-                         restrained drums with crash swells, hopeful-but-sad bridge. Eryll's Nemesis Coliseum.
-  Kopi Break           - 100 BPM, G major (swing). Lo-fi jazz: FM electric piano 7th chords, walking upright bass,
-                         brushes and ride, muted trumpet, vibraphone. Christopher's kopitiam, Lemon's cubicle hell.
-Jingles: ace-entrance stinger, victory, defeat, duel start, coin toss.
+  Blood Moon Rite      - 72 BPM, B minor (v9d). Slow, sad, dramatic guitar ballad: clean arpeggiated guitar and
+                         piano lament, crying lead with long bends and wide vibrato, strings/choir/timpani rise,
+                         heavy slow power-chord climax with twin lead, piano and clean-guitar ashes. Not upbeat.
+                         Eryll's Nemesis Coliseum, Dark Kelvin's gloom cathedral.
+  Kopi Break           - 92 BPM, G major (swing, v9d). Laid-back guitar groove: clean chorus-guitar comping,
+                         upright bass, electric piano, warm low-gain lead, vibraphone cafe section with guitar fills.
+                         Christopher's kopitiam, Lemon's cubicle hell, Hisyam's fried chicken night market, Eunice's cosy bakery.
+Jingles: ace-entrance stinger, victory, defeat, duel start, coin toss (v9d: synthesized guitar flourishes
+added to ace, victory, defeat and duel start; lengths unchanged; limited so they never clip).
 Style references named by the player were used for genre, mood, tempo and instrumentation only; no melody,
 chord sequence or riff from any existing work was copied or approximated.
 
