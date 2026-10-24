@@ -5,10 +5,10 @@ Arcane Duel Chronicles - How to play online
    Use the web link (itch.io / Netlify / GitHub Pages). It also works when the game is
    opened straight from the downloaded file (index.html) in a desktop browser
    (tested with Chrome/Chromium).
-2. Player 1: Main menu > ONLINE DUEL > type your name > Create Room.
+2. Player 1: Main menu > DUEL > Online 1 vs 1 > type your name > Create Room.
    You get a 6-character room code. Press "Copy code" (or "Copy invite link") and send
    it to your friend in any chat app.
-3. Player 2: Main menu > ONLINE DUEL > type your name > enter the code > Join Room.
+3. Player 2: Main menu > DUEL > Online 1 vs 1 > type your name > enter the code > Join Room.
    (An invite link opens the Join screen with the code already filled in.)
 4. Each player picks a duelist and a deck (Default, or the Custom deck saved in the
    Deck Builder). The room creator (the host) also picks the arena (home arena of either
@@ -26,14 +26,14 @@ During the duel
 
 Connection problems
 - If a connection drops, the game reconnects by itself. If you closed or reloaded the
-  page, open ONLINE DUEL again and join the same room code within 60 seconds. The duel
+  page, open DUEL > Online 1 vs 1 again and join the same room code within 60 seconds. The duel
   continues where it was. After 60 seconds, the player who stayed wins by forfeit.
 - The host (the player who created the room) must keep their page open. If the host's
   page is closed, the duel ends.
 - Some networks (strict company or school networks, some mobile carriers) block direct
   connections. The game then tries a free public relay. If joining keeps failing, try
   another network (for example a phone hotspot), or enter your own TURN relay under
-  ONLINE DUEL > Connection settings.
+  DUEL > Online 1 vs 1 > Connection settings.
 - Under the quick chat buttons the game shows the connection: "Connected · room CODE · 45 ms".
   The number is the round trip between the two browsers. Up to about 150 ms feels normal.
   "via relay" (shown in orange) means a direct connection was not possible and the duel

@@ -2606,9 +2606,9 @@ function renderMenu(){if(menuBuilt)return;menuBuilt=true;const m=$("#menu");
   m.innerHTML=`<div class="bgfx"><div class="aurora"></div><div class="circle">${circ(300)}</div><div class="circle circle2">${circ(240)}</div>${cards}${motes}</div>
     <div class="menuport">${CHAR_ORDER.map((c,i)=>`<img src="${PORTRAITS[CHARS[c].img]}" style="animation-delay:${-i*.7}s" alt="">`).join("")}</div>
     <div class="logo"><h1>ARCANE DUEL</h1><h2>CHRONICLES</h2><div class="tag">✦ A FANTASY CARD BATTLE ✦</div></div>
-    <div class="menubtns"><button class="mbtn primary" id="m-duel">⚔ DUEL</button><button class="mbtn" id="m-deck">🂠 DECK BUILDER</button><button class="mbtn" id="m-help">📜 HOW TO PLAY</button></div>
+    <div class="menubtns"><button class="mbtn primary" id="m-duel">⚔ DUEL</button><button class="mbtn" id="m-deck">🂠 DECK BUILDER</button><button class="mbtn" id="m-sys">⚙ SYSTEM</button></div>
     <div class="ver">v2.0 · offline edition</div>`;
-  $("#m-duel").onclick=()=>openSelect();$("#m-deck").onclick=()=>openBuilder(SEL.player||"you");$("#m-help").onclick=()=>showHelp();}
+  $("#m-duel").onclick=()=>{if(typeof window.openDuelSelect==="function")window.openDuelSelect();else openSelect();};$("#m-deck").onclick=()=>openBuilder(SEL.player||"you");$("#m-sys").onclick=()=>{if(typeof window.openSystem==="function")window.openSystem();else showHelp();};}
 
 /* ---------- CHARACTER SELECT ---------- */
 const SEL={step:1,player:null,rival:null,hover:null,arena:"auto"};
@@ -2630,7 +2630,7 @@ function renderSelect(){const el=$("#select");const step=SEL.step;
     t.onmouseleave=()=>{SEL.hover=null;$("#seldetail").innerHTML=detailHTML(chosen&&chosen!=="random"||chosen==="random"?(step===1?SEL.player:SEL.rival)||show:show);bindName();};
     t.onclick=()=>{if(step===1)SEL.player=c;else SEL.rival=c;SEL.hover=null;renderSelect();};});
   el.querySelectorAll(".achip").forEach(c=>c.onclick=()=>{SEL.arena=c.dataset.ar;renderSelect();});
-  $("#sel-back").onclick=()=>{if(step===2){SEL.step=1;renderSelect();}else showScreen("menu");};
+  $("#sel-back").onclick=()=>{if(step===2){SEL.step=1;renderSelect();}else selectExit();};
   $("#sel-ok").onclick=()=>{if(step===1){SEL.step=2;SEL.rival=null;renderSelect();}else{let r=SEL.rival;if(r==="random")r=pick(CHAR_ORDER.filter(c=>c!==SEL.player));showVersus(SEL.player,r,SEL.arena);}};
   bindName();}
 function bindName(){const i=$("#pname");if(i){i.oninput=()=>{const st=store();st.name=i.value.slice(0,16);saveStore(st);const t=document.querySelector('.tile[data-ch="you"] .tn');if(t)t.firstChild.textContent=playerName();};i.onclick=e=>e.stopPropagation();}}
@@ -2705,6 +2705,8 @@ function dbAdd(id){const n=deckCount();if((DB.deck[id]||0)>=3){toast("Max 3 copi
 function dbRemove(id){if(!DB.deck[id])return;DB.deck[id]--;if(!DB.deck[id])delete DB.deck[id];DB.dirty=true;renderBuilder(true);}
 function toast(t){const d=document.createElement("div");d.className="toast";d.textContent=t;$("#app").appendChild(d);setTimeout(()=>d.remove(),1600);}
 
+/* Back from duelist select step 1: return to the screen it was opened from (Choose your duel) */
+function selectExit(){if(typeof window.openDuelSelect==="function")window.openDuelSelect();else showScreen("menu");}
 /* ---------- HOW TO PLAY ---------- */
 function showHelp(){
   $("#modalLayer").innerHTML=`<div class="modal-bg"><div class="modal" style="width:720px">
@@ -2742,7 +2744,7 @@ function showHelp(){
   <li>When one of your effects Special Summons from your Deck, hand or Graveyard, adds a card from your Deck, revives a monster, destroys a card or targets with a Quick-Play, a chooser opens. Hover a card to read it, click to select, then <b>Confirm</b>. Optional summons also offer <b>Don't summon</b>. Your Deck is shuffled afterwards.</li>
   <li>"When destroyed" summon effects can never summon another copy of the destroyed card.</li></ul>
   <h3>Sound &amp; Music</h3><ul>
-  <li>Audio starts after your first click (browser rule). Use <b>SOUND</b> on the main menu, <b>Menu &rarr; Sound Settings</b> in a duel, or right-click the speaker button for Music / Sound-effect volume and Mute all. Left-click the speaker to mute or unmute. Settings are saved.</li>
+  <li>Audio starts after your first click (browser rule). Use <b>SYSTEM &rarr; Sound</b> on the main menu, <b>Menu &rarr; Sound Settings</b> in a duel, or right-click the speaker button for Music / Sound-effect volume and Mute all. Left-click the speaker to mute or unmute. Settings are saved.</li>
   <li>Each arena has its own theme: heroic (castle, forest), fiery (dragon lair), techy neon (machines, robots, racetrack, hobby con), cute (fairy lake, idol stage, toy town, cat cafe), mystic (magician's room, silent theatre), dark (Nemesis Coliseum) and chill (kopitiam, office). The music dips while ace clips play.</li></ul>
   <h3>Credits</h3><ul>
   <li>All music and sound effects are original, composed and synthesised in code with the Web Audio API for this game. No third-party audio files or samples are used. See CREDITS.txt in the download.</li></ul>
@@ -3903,8 +3905,7 @@ function updSpeaker(){const b=$("#btn-snd");if(b)b.classList.toggle("muted",!!AU
   const rb=document.querySelector("#duel .rbtns");if(rb&&!$("#btn-snd")){const b=document.createElement("button");b.className="btn spk";b.id="btn-snd";b.title="Sound on/off (right-click for settings)";b.innerHTML='<i class="spkic"></i>';
     b.onclick=e=>{e.stopPropagation();AUDIO.unlock();AUDIO.setVol("mute",!AUDIO.set.mute);};b.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();openSound();};rb.prepend(b);updSpeaker();}
   const q=$("#btn-quit");if(q){const o=q.onclick;q.onclick=function(){o&&o.apply(this,arguments);const row=document.querySelector("#modalLayer .btnrow");if(row&&!$("#q-snd")){const b=document.createElement("button");b.className="btn";b.id="q-snd";b.textContent="Sound Settings";b.onclick=()=>openSound();row.appendChild(b);}};}
-  const rm=renderMenu;renderMenu=function(){const r=rm.apply(this,arguments);try{const mb=document.querySelector("#menu .menubtns");if(mb&&!$("#m-snd")){const b=document.createElement("button");b.className="mbtn";b.id="m-snd";b.textContent="SOUND";b.onclick=()=>openSound();mb.appendChild(b);}}catch(e){}return r;};
-  if(document.querySelector("#menu .menubtns")&&!$("#m-snd")){const b=document.createElement("button");b.className="mbtn";b.id="m-snd";b.textContent="SOUND";b.onclick=()=>openSound();document.querySelector("#menu .menubtns").appendChild(b);}
+  /* v14 menu: Sound lives in the SYSTEM panel (no separate SOUND main-menu button) */
   AUDIO.want=CUR==="duel"&&G?AUDIO.trackFor(G.arena):"menu";
 }catch(e){}})();
 /* new5b: theme colours + ace-entrance FX for Gloomheart / Hustler / Ki Fighter / Fried Chicken / Gallop Idol,
@@ -4734,7 +4735,7 @@ document.addEventListener("keydown",e=>{const el=RS.el;if(!el||!el.isConnected||
   if(e.key==="ArrowLeft"||e.key==="ArrowUp"){e.preventDefault();step(-1);}else if(e.key==="ArrowRight"||e.key==="ArrowDown"){e.preventDefault();step(1);}
   else if(e.key==="Enter"){const ok=el.querySelector("#sel-ok");if(ok&&!ok.disabled){e.preventDefault();ok.click();}}
   else if(e.key==="m"||e.key==="M"){const b=RS.pick==="random"?null:frontBase();if(b&&MODES[b])toggleMode(b);}
-  else if(e.key==="Escape"){const bk=el.querySelector("#sel-back");if(bk)bk.click();}});
+  else if(e.key==="Escape"){e.preventDefault();const bk=el.querySelector("#sel-back");if(bk)bk.click();}});
 
 /* offline select: both steps use the ring */
 renderSelect=function(){const el=$("#select");const st=SEL.step;
@@ -4745,7 +4746,7 @@ renderSelect=function(){const el=$("#select");const st=SEL.step;
     onChange:c=>{if(st===1)SEL.player=c;else SEL.rival=(c===SEL.player?null:c);},
     confirmLabel:c=>st===1?{ok:!!c,text:"Next: Choose Rival ▶"}:(c===SEL.player?{ok:false,text:"Already your duelist"}:{ok:!!c,text:"⚔ DUEL!"}),
     onConfirm:c=>{if(st===1){SEL.player=c;SEL.step=2;SEL.rival=null;renderSelect();}else{let r=c;if(r==="random")r=pick(CHAR_ORDER.filter(x=>x!==SEL.player));(window.showFieldSelect?showFieldSelect(SEL.player,r,c):showVersus(SEL.player,r,SEL.arena));}},
-    onBack:()=>{if(st===2){SEL.step=1;renderSelect();}else showScreen("menu");},
+    onBack:()=>{if(st===2){SEL.step=1;renderSelect();}else selectExit();},
     afterDetail:()=>bindName()});
 };
 bindName=function(){const i=$("#pname");if(i){i.oninput=()=>{const st=store();st.name=i.value.slice(0,16);saveStore(st);const t=document.querySelector('.rt[data-b="you"] .tn');if(t)t.textContent=playerName();const h=document.querySelector(".rcenter .detail h3");if(h)h.textContent=playerName().toUpperCase();};i.onclick=e=>e.stopPropagation();i.onkeydown=e=>e.stopPropagation();}};
@@ -4807,6 +4808,7 @@ const css=document.createElement("style");css.textContent=`
 .fsel .fhead h2{margin:0;font-family:Impact,"Arial Black",sans-serif;font-size:34px;letter-spacing:4px;color:#fff;font-style:italic;text-shadow:3px 3px 0 #c8102e,0 0 20px #ff5f2a88}
 .fsel .fhead .sub{font-size:12px;opacity:.75;margin-top:1px}
 .fsel .fside{position:absolute;top:0;bottom:0;width:340px;overflow:hidden}
+.fsel>#sel-back{z-index:40}
 .fsel .fside.p1{left:0;--pc:#ff3b4e}.fsel .fside.p2{right:0;--pc:#3ba0ff}
 .fsel .frender{position:absolute;left:0;right:0;top:56px;height:470px;overflow:hidden}
 .fsel .fside.p1 .frender{clip-path:polygon(0 0,100% 0,88% 100%,0 100%)}.fsel .fside.p2 .frender{clip-path:polygon(0 0,100% 0,100% 100%,12% 100%)}
@@ -4941,7 +4943,7 @@ function fightMount(host,ctx){FS.busy=false;const el=host||$("#select");FS.ctx=c
   const rr=el.querySelector("#sel-rand");if(rr){rr.onclick=()=>confirmPick(true);rr.onmouseenter=()=>paint("random",true);rr.onmouseleave=()=>paint(undefined,false);}
   if(X){el.querySelector("#sel-back").onclick=()=>X.onBack&&X.onBack();
     paint(undefined,true);return;}
-  el.querySelector("#sel-back").onclick=()=>{if(st===2){SEL.step=1;renderSelect();}else showScreen("menu");};
+  el.querySelector("#sel-back").onclick=()=>{if(st===2){SEL.step=1;renderSelect();}else selectExit();};
   paint(undefined,true);}
 window.fightMount=fightMount;
 const circleRender=renderSelect;
@@ -4956,7 +4958,7 @@ document.addEventListener("keydown",e=>{const el=FS.el;if(!el||!el.isConnected||
   if(e.key==="ArrowLeft")mv(-1);else if(e.key==="ArrowRight")mv(1);else if(e.key==="ArrowUp")mv(-COLS);else if(e.key==="ArrowDown")mv(COLS);
   else if(e.key==="Enter"){e.preventDefault();confirmPick();}
   else if(e.key==="m"||e.key==="M"){if(!FS.random&&FS.cur&&MODES[FS.cur])toggleMode(FS.cur);}
-  else if(e.key==="Escape"){const bk=el.querySelector("#sel-back");if(bk)bk.click();}});
+  else if(e.key==="Escape"){e.preventDefault();const bk=el.querySelector("#sel-back");if(bk)bk.click();}});
 })();
 /* ================= v9f: fighting-game STAGE SELECT (duelist -> rival -> STAGE -> VS -> duel) ================= */
 (function(){
@@ -5562,6 +5564,25 @@ const css=document.createElement("style");css.id="tagcss";css.textContent=`
 .how .ic{font-size:28px}.how b{display:block;font-size:16px;letter-spacing:2px}.how i{display:block;font-size:11px;opacity:.8;font-style:normal}
 .tmbtns{position:absolute;left:0;right:0;top:640px;display:flex;justify-content:center;gap:16px}
 .tmbtns .btn{min-width:150px;min-height:48px;font-size:16px;letter-spacing:2px}
+/* v14 Choose-your-duel screen */
+.dgroups{position:absolute;left:0;right:0;top:146px;display:flex;justify-content:center;gap:40px}
+.dgroup{display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 14px 14px;border-radius:18px;border:1px solid #6c5aa866;background:#0e0a2277}
+.dgh{font:bold 14px Arial,sans-serif;letter-spacing:5px;color:#ffd36b;text-shadow:0 0 10px #ffb84d88}.dgh .ic{margin-right:8px;font-size:18px}
+.dgroup.on .dgh{color:#9fe0ff;text-shadow:0 0 10px #3ba0ff88}.dgroup.on{border-color:#3ba0ff55}
+.dgc{display:flex;gap:16px}
+.mcard.dcard{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;width:272px;height:318px;padding:0;text-align:left;color:#fff;font:inherit}
+.mcard.dcard:focus-visible{outline:none;border-color:#ffd36b;box-shadow:0 0 0 3px #ffd36b88,0 0 30px #ffb84d88}
+.mcard.dcard:not(.dis):hover{border-color:#ffd36b;box-shadow:0 0 0 2px #ffd36b66,0 0 26px #ffb84d66}
+.dgroup.on .mcard.dcard:not(.dis):hover{border-color:#6cc4ff;box-shadow:0 0 0 2px #6cc4ff66,0 0 26px #3ba0ff66}
+.dcard .art{height:140px}.dcard h3{font-size:22px}
+.d4wrap{position:absolute;left:0;right:0;top:536px;display:flex;justify-content:center}
+.d4way{width:600px;height:68px;display:flex;align-items:center;gap:14px;padding:0 14px;border-radius:14px;border:2px dashed #6c5aa8;background:#160d30cc;color:#fff;font:inherit;cursor:not-allowed;filter:grayscale(.6);opacity:.75}
+.d4way .art{width:88px;height:50px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:25px 25px;border-radius:8px;overflow:hidden;flex:none}
+.d4way .art img{width:100%;height:25px;object-fit:cover;object-position:50% 12%}
+.d4way b{font:italic 900 22px Impact,"Arial Black",sans-serif;letter-spacing:1px;text-shadow:2px 2px 0 #c8102e}.d4way i{font-size:12px;opacity:.85;font-style:normal;flex:1;text-align:left}
+.d4way .badge{font:italic 900 12px Arial,sans-serif;color:#fff;background:#555;padding:2px 8px;border-radius:4px;transform:rotate(-4deg)}
+#tagmode .tmbtns{top:628px}
+.dhint{position:absolute;left:0;right:0;top:690px;text-align:center;font-size:11px;letter-spacing:2px;opacity:.5}
 /* seat select */
 .tsh{position:absolute;left:0;right:0;top:12px;text-align:center}
 .tsh h1{margin:0;font-family:Impact,"Arial Black",sans-serif;font-style:italic;font-size:36px;letter-spacing:2px;text-shadow:3px 3px 0 #c8102e}
@@ -5782,36 +5803,42 @@ const pickCh=(l)=>l.filter(has).concat(CHAR_ORDER).slice(0,4);
 function onlineOK(){return typeof window.tagOnlineOpen==="function";}
 function onlineFor(m){return m==="1v1"?!!document.getElementById("m-online"):onlineOK();}
 function onlineTxt(m){return onlineFor(m)?(m==="1v1"?"Host a room code or join one (1 vs 1).":"Host a room code or join one. 2–4 humans, AI fills empty seats."):(m==="1v1"?"Online play is in the online edition (website).":(document.getElementById("m-online")?"Online Tag Duel is coming in a later update. Play Tag vs AI for now.":"Online play is in the online edition (website)."));}
-function openTagMode(){const s=mkScreen("tagmode");const tq=pickCh(["kaito","clement","ryuga","mira"]),fw=pickCh(["kelvin","jason","sabrina","aoiyuki"]);
-  s.innerHTML=`<div class="tmh"><h1>ARCANE DUEL</h1><h2>CHRONICLES</h2><div class="crumb">MAIN MENU ▸ DUEL ▸ CHOOSE A MODE</div></div>
-   <div class="mcards">
-    <div class="mcard" data-mode="1v1"><span class="seltag">✓ SELECTED</span><div class="art"><img src="${P_(tq[0])}"><img src="${P_(tq[2])}"><span class="vs">VS</span></div><h3>1 VS 1 DUEL</h3><div class="tl">The classic duel</div><ul><li>8000 LP · one Chronicles Link each</li><li>Story-free duel vs AI, or online</li></ul></div>
-    <div class="mcard" data-mode="tag"><span class="seltag">✓ SELECTED</span><span class="badge">NEW!</span><div class="art"><img src="${P_(tq[0])}"><img src="${P_(tq[1])}"><img src="${P_(tq[2])}"><img src="${P_(tq[3])}"><span class="vs">VS</span></div><h3>TAG DUEL · 2 VS 2</h3><div class="tl">You + partner vs two rivals</div><ul><li>Teams <b>share one field</b> and Graveyard</li><li>Own deck, hand, 8000 LP and Link each</li><li>Turns go A1 → B1 → A2 → B2</li><li>A team loses when both partners are out</li></ul></div>
-    <div class="mcard dis" data-mode="4way" title="Coming soon"><span class="badge soon">COMING SOON</span><div class="art q"><img src="${P_(fw[0])}"><img src="${P_(fw[1])}"><img src="${P_(fw[2])}"><img src="${P_(fw[3])}"><span class="four">4</span></div><h3>4-WAY DUEL</h3><div class="tl">Free-for-all, last one standing</div><ul><li>4 duelists · 8000 LP · own field each</li><li>Not available yet</li></ul></div>
+/* v14: one DUEL button on the main menu opens this "Choose your duel" screen (replaces the old DUEL + TAG DUEL + ONLINE buttons) */
+function onlineDuelOK(){return typeof window.netOpenOnline==="function"||typeof netOpenOnline==="function";}
+function openOnline1v1(){try{(window.netOpenOnline||netOpenOnline)();}catch(e){showScreen("menu");}}
+function openTagMode(){const s=mkScreen("tagmode");const tq=pickCh(["kaito","clement","ryuga","mira"]),fw=pickCh(["kelvin","jason","sabrina","aoiyuki"]),on=pickCh(["sabrina","weiyao","lily","toma"]);
+  const o1=onlineDuelOK(),o2=onlineOK();const offTxt="Online edition only (website version)";
+  const art2=(a,b)=>`<div class="art"><img src="${P_(a)}"><img src="${P_(b)}"><span class="vs">VS</span></div>`;
+  const art4=(a,b,c,d)=>`<div class="art"><img src="${P_(a)}"><img src="${P_(b)}"><img src="${P_(c)}"><img src="${P_(d)}"><span class="vs">VS</span></div>`;
+  const card=(k,cls,badge,art,h,tl,li)=>`<button class="mcard dcard${cls}" data-duel="${k}">${badge}${art}<h3>${h}</h3><div class="tl">${tl}</div><ul>${li}</ul></button>`;
+  s.innerHTML=`<div class="tmh"><h1>ARCANE DUEL</h1><h2>CHRONICLES</h2><div class="crumb">MAIN MENU ▸ DUEL ▸ CHOOSE YOUR DUEL</div></div>
+   <div class="dgroups">
+    <div class="dgroup"><div class="dgh"><span class="ic">🤖</span>VS AI</div><div class="dgc">
+     ${card("ai1","","",art2(tq[0],tq[2]),"1 VS 1 DUEL","The classic duel vs one AI rival","<li>8000 LP · one Chronicles Link each</li><li>Pick your duelist, rival and stage</li>")}
+     ${card("ai2","",`<span class="badge">NEW!</span>`,art4(tq[0],tq[1],tq[2],tq[3]),"TAG DUEL · 2 VS 2","You + an AI partner vs 2 AI","<li>Teams <b>share one field</b> and Graveyard</li><li>Turns go A1 → B1 → A2 → B2</li>")}
+    </div></div>
+    <div class="dgroup on"><div class="dgh"><span class="ic">🌐</span>ONLINE WITH FRIENDS</div><div class="dgc">
+     ${card("on1",o1?"":" dis",o1?"":`<span class="badge soon">ONLINE EDITION</span>`,art2(on[0],on[1]),"ONLINE 1 VS 1","Duel a friend with a room code",o1?"<li>Host a room code or join one</li><li>Free, no account needed</li>":`<li>${offTxt}</li>`)}
+     ${card("on2",o2?"":" dis",o2?`<span class="badge">NEW!</span>`:`<span class="badge soon">ONLINE EDITION</span>`,art4(on[0],on[1],on[2],on[3]),"ONLINE TAG · 2 VS 2","2–4 friends, AI fills empty seats",o2?"<li>Host a room code or join one</li><li>Pick teams and seats together</li>":`<li>${offTxt}</li>`)}
+    </div></div>
    </div>
-   <div class="howq">HOW DO YOU WANT TO PLAY?</div>
-   <div class="hows"><button class="how" data-how="ai"><span class="ic">🤖</span><span><b>VS AI</b><i class="hai"></i></span></button>
-     <button class="how" data-how="online"><span class="ic">🌐</span><span><b>ONLINE WITH FRIENDS</b><i class="hon"></i></span></button></div>
-   <div class="tmbtns"><button class="btn" id="tm-back">◀ BACK</button><button class="btn gold" id="tm-go">CHOOSE SEATS ▶</button></div>`;
-  const paint=()=>{const ob=s.querySelector('.how[data-how="online"]');const ok=onlineFor(MODE.mode);ob.classList.toggle("dis",!ok);s.querySelector(".hon").textContent=onlineTxt(MODE.mode);if(!ok&&MODE.how==="online")MODE.how="ai";
-    s.querySelectorAll(".mcard").forEach(c=>c.classList.toggle("sel",c.dataset.mode===MODE.mode));s.querySelectorAll(".how").forEach(c=>c.classList.toggle("sel",c.dataset.how===MODE.how));
-    s.querySelector(".hai").textContent=MODE.mode==="tag"?"You + an AI partner vs 2 AI.":"You vs one AI rival.";
-    $("#tm-go").textContent=MODE.mode==="tag"?"CHOOSE SEATS ▶":"CHOOSE DUELIST ▶";};
-  s.onclick=e=>{const c=e.target.closest(".mcard");if(c){if(c.classList.contains("dis")){flash(c);return;}MODE.mode=c.dataset.mode;paint();snd("click");return;}
-    const h=e.target.closest(".how");if(h){if(h.classList.contains("dis"))return;MODE.how=h.dataset.how;paint();snd("click");return;}
-    if(e.target.closest("#tm-back")){showScreen("menu");return;}
-    if(e.target.closest("#tm-go")){if(MODE.mode==="1v1"){if(MODE.how==="online"){showScreen("menu");setTimeout(()=>{const b=$("#m-online");if(b)b.click();},50);}else openSelect();return;}
-      if(MODE.how==="online"&&onlineOK()){window.tagOnlineOpen();return;}openTagSelect();}};
-  paint();showScreen("tagmode");}
+   <div class="d4wrap"><button class="d4way dis" data-duel="4way" title="Coming soon"><span class="art q"><img src="${P_(fw[0])}"><img src="${P_(fw[1])}"><img src="${P_(fw[2])}"><img src="${P_(fw[3])}"></span><b>4-WAY DUEL</b><i>Free-for-all, last one standing</i><span class="badge soon">COMING SOON</span></button></div>
+   <div class="tmbtns"><button class="btn" id="tm-back">◀ BACK</button></div>
+   <div class="dhint">click / tap a duel · Esc or Back returns to the main menu</div>`;
+  s.onclick=e=>{const c=e.target.closest("[data-duel]");if(c){if(c.classList.contains("dis")){flash(c);try{AUDIO.play("alert");}catch(er){}return;}const k=c.dataset.duel;snd("click");
+      if(k==="ai1"){MODE.mode="1v1";MODE.how="ai";SEL.step=1;openSelect();}
+      else if(k==="ai2"){MODE.mode="tag";MODE.how="ai";openTagSelect();}
+      else if(k==="on1"){MODE.mode="1v1";MODE.how="online";openOnline1v1();}
+      else if(k==="on2"){MODE.mode="tag";MODE.how="online";window.tagOnlineOpen();}
+      return;}
+    if(e.target.closest("#tm-back")){showScreen("menu");return;}};
+  showScreen("tagmode");}
 function flash(c){c.animate([{transform:"translateX(0)"},{transform:"translateX(-6px)"},{transform:"translateX(6px)"},{transform:"none"}],250);}
 function snd(k){try{if(typeof AUDIO!=="undefined")AUDIO.play(k);}catch(e){}}
 window.openTagMode=openTagMode;
 /* menu entry: a TAG DUEL button next to DUEL (the 1v1 DUEL button is unchanged) */
-const bRM=renderMenu;renderMenu=function(){const r=bRM.apply(this,arguments);const mb=$("#menu .menubtns");
-  if(mb&&!$("#m-tag")){mb.style.position=mb.style.position||"absolute";const b=el("button","mbtn","m-tag","👥 TAG DUEL <span class='newb'>NEW</span>");
-    b.style.cssText="position:absolute;left:calc(100% + 16px);top:0;width:230px;white-space:nowrap";b.onclick=()=>openTagMode();mb.appendChild(b);}
-  return r;};
-const css2=document.createElement("style");css2.textContent=`#m-tag .newb{font-size:11px;background:#e0213d;color:#fff;border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:middle}`;document.head.appendChild(css2);
+window.openDuelSelect=openTagMode;
+/* v14: the separate TAG DUEL main-menu button is gone: DUEL opens the Choose-your-duel screen above */
 
 /* ---------- seat select ---------- */
 const SEAT={chars:null,human:[true,false,false,false],cur:1,online:null,names:[]};
@@ -5860,6 +5887,74 @@ function onSelClick(e){const on=SEAT.online;
   if(e.target.closest("#ts-go")){if(on){if(on.isHost&&on.onStart)on.onStart();return;}
     const host=$("#tagsel");window.__stage=stageMount(host,{p1:SEAT.chars[0],p2:SEAT.chars[1],initial:null,okText:"⚔ START TAG DUEL",
       onBack:()=>renderTagSelect(),onConfirm:k=>{startTag({chars:SEAT.chars.slice(),human:[true,false,false,false],arena:k});}});}}
+})();
+/* ===== v14 menu: SYSTEM panel (Sound + How to Play), Esc and phone/browser Back for every screen ===== */
+(function(){
+const css=document.createElement("style");css.textContent=`
+#sys-panel{width:780px;max-width:96%;max-height:92%;display:flex;flex-direction:column;padding:16px 20px 14px}
+#sys-panel h2{margin:0 0 10px}
+.systabs{display:flex;gap:10px;margin-bottom:12px}
+.systab{flex:1;min-height:48px;border-radius:10px;border:2px solid #6c5aa8;background:#22174a;color:#fff;font:bold 15px Arial,sans-serif;letter-spacing:2px;cursor:pointer}
+.systab.sel{border-color:#ffd36b;background:#3a2766;box-shadow:0 0 14px #ffb84d55;color:#ffe08a}
+.sysbody{flex:1;min-height:0;overflow:auto;padding-right:6px}
+.sysbody .sndrow{display:flex;align-items:center;gap:12px;margin:12px 0;font-size:15px}.sysbody .sndrow span{min-width:130px}
+.sysbody .sndrow input[type=range]{flex:1;height:28px}.sysbody .sndrow b{min-width:34px;text-align:right}
+.sysbody .sndrow.chk input{width:22px;height:22px}
+.sysbody .sndnote{font-size:12px;opacity:.75;line-height:1.5;margin-top:10px}
+.sysbody .sysrow{display:flex;gap:10px;margin-top:14px}
+#sys-panel .btnrow{display:flex;justify-content:center;gap:12px;margin-top:12px}
+#sys-panel .btnrow .btn{min-width:150px;min-height:44px}
+`;document.head.appendChild(css);
+
+let helpCache=null;
+function helpHTML(){if(helpCache)return helpCache;try{const ml=$("#modalLayer");const keep=ml.innerHTML;showHelp();const m=ml.querySelector(".modal");
+    if(m){const c=m.cloneNode(true);c.querySelectorAll(".btnrow,h2").forEach(x=>x.remove());helpCache=c.innerHTML;}ml.innerHTML=keep;}catch(e){}
+  return helpCache||"<p>How to Play is not available.</p>";}
+function soundHTML(){if(typeof AUDIO==="undefined"||typeof soundPanelHTML!=="function")return "<p>Sound settings are not available.</p>";
+  const t=document.createElement("div");t.innerHTML=soundPanelHTML();const m=t.querySelector(".modal");m.querySelector("h2").remove();m.querySelector(".btnrow").remove();
+  return m.innerHTML+`<div class="sysrow"><button class="btn" id="snd-test">🔊 Test sound</button></div>`;}
+function bindSound(){if(typeof AUDIO==="undefined")return;const bind=(id,k)=>{const e=$("#"+id);if(e)e.oninput=()=>{AUDIO.setVol(k,e.value/100);$("#"+id+"-v").textContent=e.value;};};
+  bind("snd-music","music");bind("snd-sfx","sfx");const mu=$("#snd-mute");if(mu)mu.onchange=e=>AUDIO.setVol("mute",e.target.checked);
+  const te=$("#snd-test");if(te)te.onclick=()=>{AUDIO.unlock();setTimeout(()=>AUDIO.play("spell"),60);};}
+function openSystem(tab){tab=tab||openSystem.last||"sound";openSystem.last=tab;
+  $("#modalLayer").innerHTML=`<div class="modal-bg" id="sysbg"><div class="modal" id="sys-panel">
+    <h2>⚙ System</h2>
+    <div class="systabs"><button class="systab${tab==="sound"?" sel":""}" data-tab="sound">🔊 SOUND</button><button class="systab${tab==="help"?" sel":""}" data-tab="help">📜 HOW TO PLAY</button></div>
+    <div class="sysbody" data-tab="${tab}">${tab==="sound"?soundHTML():helpHTML()}</div>
+    <div class="btnrow"><button class="btn gold" id="sys-close">◀ Back</button></div></div></div>`;
+  if(tab==="sound")bindSound();
+  $("#modalLayer").querySelectorAll(".systab").forEach(b=>b.onclick=()=>{if(b.dataset.tab!==openSystem.last)openSystem(b.dataset.tab);});
+  $("#sys-close").onclick=()=>{$("#modalLayer").innerHTML="";};
+  $("#sysbg").onclick=e=>{if(e.target.id==="sysbg")$("#modalLayer").innerHTML="";};}
+window.openSystem=openSystem;
+
+/* ---- one "go back" used by Esc and the phone / browser Back button ---- */
+const vis=e=>{if(!e||!e.isConnected)return false;const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(e).visibility!=="hidden";};
+const BACKS=["#st-back","#sel-back","#ts-back","#tn-back","#on-back","#db-back","#tm-back"];
+function modalBack(){const ml=$("#modalLayer");if(!ml||!ml.children.length)return null;
+  for(const id of ["#sys-close","#btn-close-help","#snd-close","#cr-close"]){const b=ml.querySelector(id);if(vis(b))return b;}
+  return [...ml.querySelectorAll("button")].find(b=>vis(b)&&/^\s*(◀\s*)?(close|cancel|back|keep playing|no)\b/i.test(b.textContent))||"stay";}
+function goBack(){try{
+  const op=window.__opening;if(op&&op.state==="run"&&op.skip){op.skip();return true;}
+  const mb=modalBack();if(mb==="stay")return true;if(mb){mb.click();return true;}
+  if(typeof CUR!=="undefined"&&CUR==="duel"){const q=$("#btn-quit");if(vis(q))q.click();return true;}
+  for(const s of BACKS){const b=[...document.querySelectorAll(s)].find(vis);if(b){b.click();return true;}}
+  if(typeof CUR!=="undefined"&&CUR!=="menu"){showScreen("menu");return true;}
+  }catch(e){}return false;}
+window.adcGoBack=goBack;
+/* Esc: screens without their own Esc handler (select + stage already have one) */
+document.addEventListener("keydown",e=>{if(e.key!=="Escape"||e.defaultPrevented)return;const t=e.target;if(t&&/INPUT|TEXTAREA|SELECT/.test(t.tagName)&&t.type!=="range"&&t.type!=="checkbox")return;
+  const ml=$("#modalLayer");const mb=modalBack();
+  if(mb&&mb!=="stay"&&ml.querySelector("#sys-panel,#btn-close-help,#snd-close")){e.preventDefault();mb.click();return;}
+  if(!ml.children.length&&typeof CUR!=="undefined"&&CUR!=="menu"&&CUR!=="duel"){const b=["#ts-back","#tn-back","#on-back","#tm-back","#db-back"].map(s=>$(s)).find(vis);if(b){e.preventDefault();b.click();}}});
+/* phone / browser Back: keep one guard history entry while away from the main menu (or a panel is open),
+   so Back steps back inside the game instead of leaving the page */
+if(history.pushState){let armed=false;
+  const arm=()=>{if(armed)return;try{history.pushState({adc:1},"");armed=true;}catch(e){}};
+  const need=()=>(typeof CUR!=="undefined"&&CUR!=="menu")||($("#modalLayer")&&$("#modalLayer").children.length>0);
+  const sS=showScreen;showScreen=function(n){const r=sS.apply(this,arguments);if(n!=="menu")arm();return r;};
+  try{new MutationObserver(()=>{if(need())arm();}).observe($("#modalLayer"),{childList:true});}catch(e){}
+  window.addEventListener("popstate",()=>{armed=false;goBack();setTimeout(()=>{if(need())arm();},350);});}
 })();
 /* ================= v9g: title OPENING SCENE (black -> light streak + anime spell circle charge-up (canvas) -> flash -> slam + shine + burst -> CHRONICLES letters -> menu)
    Plays once per load on the title screen; any click/tap/key skips it (v12: that press never reaches the menu buttons). Without unlocked audio it shows PRESS ANY KEY first.
@@ -6799,7 +6894,7 @@ function netRenderOnline(prefill){const el=$("#online");if(!el)return;const v=NE
   else if(v==="pick")body=netPickHTML();
   el.innerHTML=`<button class="btn backbtn" id="on-back">◀ ${NET.role?"Leave":"Back"}</button><div class="selhead"><h2>ONLINE DUEL</h2><div class="sub">${NET.role?"Room "+netEsc(NET.code||"")+(NET.role==="host"?" · you are the host":" · you joined"):"Duel a friend anywhere. Free, no account needed."}</div></div><div class="onbody">${body}</div>`;
   if(NET.statusHTML!=null&&$("#on-status"))netStatus(NET.statusHTML,NET.statusErr);
-  $("#on-back").onclick=()=>{if(NET.role)netLeaveRoom(false);NET.view="home";NET.statusHTML="";showScreen("menu");};
+  $("#on-back").onclick=()=>{if(NET.role)netLeaveRoom(false);NET.view="home";NET.statusHTML="";if(typeof window.openDuelSelect==="function")window.openDuelSelect();else showScreen("menu");};
   const nm=$("#on-name");if(nm)nm.oninput=()=>{NET.me.name=nm.value;};
   const cr=$("#on-create");if(cr)cr.onclick=()=>{NET.me.name=netName(nm?nm.value:NET.me.name);NET.statusHTML="";netCreateRoom();};
   const jn=$("#on-join"),cd=$("#on-code");if(cd){cd.oninput=()=>{cd.value=netCleanCode(cd.value);};cd.onkeydown=e=>{if(e.key==="Enter")jn.click();};}
@@ -6921,8 +7016,8 @@ const netOrigPrompt=promptResponse;
      Every render() rebuilds the hand / field HTML; with data: URLs that HTML carried ~0.4 MB of base64 per render. */
   const blobW=(name,pre)=>W(name,o=>function(){const r=o.apply(this,arguments);if(NET.inDuel&&typeof r==="string"&&r.startsWith("data:"))return netBlobUrl(pre+[...arguments].join("_"),r);return r;});
   blobW("artSrc","a:");blobW("exprSrc","x:");blobW("posterSrc","p:");
-  /* menu: add the Online Duel button */
-  const addBtn=()=>{const mb=document.querySelector("#menu .menubtns");if(mb&&!$("#m-online")){const b=document.createElement("button");b.className="mbtn";b.id="m-online";b.textContent="🌐 ONLINE DUEL";b.onclick=()=>netOpenOnline();
+  /* menu (v14): Online 1v1 lives in DUEL > Choose your duel (window.openDuelSelect); the old ONLINE DUEL main button is only added to builds without it */
+  const addBtn=()=>{const mb=document.querySelector("#menu .menubtns");if(mb&&!$("#m-online")&&typeof window.openDuelSelect!=="function"){const b=document.createElement("button");b.className="mbtn";b.id="m-online";b.textContent="🌐 ONLINE DUEL";b.onclick=()=>netOpenOnline();
       const d=$("#m-duel");if(d&&d.nextSibling)mb.insertBefore(b,d.nextSibling);else mb.appendChild(b);}
     const ver=document.querySelector("#menu .ver");if(ver&&!/online/.test(ver.textContent))ver.textContent=ver.textContent.replace("offline edition","single-player & online");};
   W("renderMenu",o=>function(){const r=o.apply(this,arguments);try{addBtn();}catch(e){}return r;});
@@ -7650,7 +7745,8 @@ window.tagOnlineOpen=function(){const s=tnScreen();const st=netSettings();const 
   s.querySelector("#tn-back").onclick=()=>{tnReset();if(typeof window.openTagMode==="function")window.openTagMode();else showScreen("menu");};
   showScreen("tagnet");};
 (function(){const c=document.createElement("style");c.textContent=`
-#tagnet{display:none;align-items:center;justify-content:center}#tagnet.active{display:flex}
+#tagnet{display:none;align-items:center;justify-content:center}#tagnet.on,#tagnet.active{display:flex}
+#online>#on-back{z-index:30}
 #tagnet .tnbox{width:820px;max-width:94%;margin:40px auto;background:rgba(8,14,30,.92);border:1px solid #3a5a8a;border-radius:14px;padding:22px 28px;color:#e8f0ff;text-align:center;box-shadow:0 0 40px #0008}
 #tagnet h1{font-size:26px;letter-spacing:2px;margin:0 0 4px;color:#ffd76a}#tagnet .sub{opacity:.8;font-size:13px;margin-bottom:14px}
 #tagnet label{display:block;margin:8px 0 14px;font-size:14px}#tagnet input{font-size:16px;padding:6px 10px;border-radius:6px;border:1px solid #567;background:#0c1830;color:#fff;margin-left:8px;text-transform:none}
