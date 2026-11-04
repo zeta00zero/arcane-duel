@@ -6352,7 +6352,7 @@ function onOther(e){
     stop(e);return;}
   if(e.type==="pointerup"||e.type==="pointercancel")held=false;
   stop(e);
-  if(e.type==="click"&&V.state==="tap"){if(e.target&&e.target.closest&&e.target.closest(".vskip"))end(true);else startFromTap();}}
+  if((e.type==="click"||e.type==="touchend")&&V.state==="tap"){if(e.target&&e.target.closest&&e.target.closest(".vskip"))end(true);else startFromTap();}}
 ["keydown","pointerdown"].forEach(t=>addEventListener(t,onDown,{capture:true,passive:false}));
 ["click","dblclick","auxclick","contextmenu","mousedown","mouseup","pointerup","pointercancel","touchstart","touchend","touchcancel","touchmove","keyup","keypress"].forEach(t=>addEventListener(t,onOther,{capture:true,passive:false}));
 V.play=()=>{if(V.state!=="off")return;replay=true;try{AUDIO.music(null);}catch(e){}try{$("#modalLayer").innerHTML="";}catch(e){}build();play();};
