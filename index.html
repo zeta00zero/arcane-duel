@@ -5730,6 +5730,44 @@ const css=document.createElement("style");css.id="tagcss";css.textContent=`
 .tsbtns .btn{min-height:44px;min-width:110px}
 .tsbtns .vsx{font:italic 900 40px Impact;color:#ff4b5c;text-shadow:2px 2px 0 #fff3}
 .tsfoot{position:absolute;left:0;right:0;bottom:4px;text-align:center;font-size:10.5px;opacity:.6}
+/* v15 compact tag select */
+#tagsel .tsh{top:6px}#tagsel .tsh h1{font-size:28px;letter-spacing:3px;color:#ffe08a;text-shadow:2px 2px 0 #c8102e,0 0 14px #ffb84d88}
+#tagsel .tsh .sub{font-size:10.5px;letter-spacing:1px}
+#tagsel .tcol{top:56px;width:262px;gap:7px}#tagsel .tcol.a{left:10px}#tagsel .tcol.b{right:10px}
+#tagsel .tcol .tl{font-size:13px;padding:2px}
+#tagsel .scard{height:158px;border-radius:10px;border-width:2px;background:linear-gradient(160deg,#2c1d5ce6,#110a26e6);transition:transform .12s,box-shadow .12s}
+#tagsel .scard.a{border-left:4px solid #3b8cff}#tagsel .scard.b{border-right:4px solid #ff3b52}
+#tagsel .scard:hover{transform:translateY(-2px)}
+#tagsel .scard.cur{border-color:#ffd36b;box-shadow:0 0 0 2px #ffd36b88,0 0 18px #ffb84d77}
+#tagsel .scard .pw{position:absolute;left:0;top:0;bottom:0;width:104px;overflow:hidden}
+#tagsel .scard.b .pw{left:auto;right:0}
+#tagsel .scard .pw img.big{position:static;width:100%;height:100%;object-fit:cover;object-position:50% 10%;-webkit-mask-image:linear-gradient(90deg,#000 70%,transparent);mask-image:linear-gradient(90deg,#000 70%,transparent)}
+#tagsel .scard.b .pw img.big{-webkit-mask-image:linear-gradient(270deg,#000 70%,transparent);mask-image:linear-gradient(270deg,#000 70%,transparent)}
+#tagsel .scard .key{top:5px;font-size:15px}
+#tagsel .scard .inf{left:108px;right:6px;top:6px;bottom:5px;gap:3px}#tagsel .scard.b .inf{left:6px;right:108px;align-items:flex-end;text-align:right}
+#tagsel .scard .nm{font:italic 900 18px Impact,"Arial Black",sans-serif;letter-spacing:.5px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#tagsel .scard .who{font-size:10px}
+#tagsel .tog span{padding:1px 6px;font-size:10px;min-height:22px}
+#tagsel .swapi{font-size:10.5px;padding:1px 7px;min-height:22px}
+#tagsel .scard .lnk{font-size:9.5px;line-height:1.25;padding:3px 5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#tagsel .tmid{left:284px;right:284px;top:56px;gap:5px}
+#tagsel .torder{flex-wrap:wrap;justify-content:center;gap:4px;font-size:10px}
+#tagsel .torder .oc{display:inline-flex;align-items:center;gap:3px;padding:1px 6px 1px 1px;border-radius:10px;background:#0008;border:1px solid var(--c)}
+#tagsel .torder .oc img{width:18px;height:18px;border-radius:50%;object-fit:cover;object-position:50% 10%}
+#tagsel .tgrid{grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+#tagsel .tile{height:72px;border-radius:6px;border-width:2px;transition:transform .1s}
+#tagsel .tile:hover{transform:scale(1.05);z-index:2}
+#tagsel .tile .tn{font:italic 700 9.5px Arial;letter-spacing:.3px;padding:5px 0 1px}
+#tagsel .tile.alt img{filter:hue-rotate(-20deg) saturate(1.3)}
+#tagsel .mtb{position:absolute;right:2px;bottom:2px;z-index:4;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 12px Arial;color:#2a1700;background:radial-gradient(circle at 35% 30%,#fff3c0,#ffd36b 55%,#b8862a);border:1px solid #fff;box-shadow:0 0 6px #ffb84d,0 1px 2px #000;cursor:pointer;transition:transform .15s}
+#tagsel .mtb:hover{transform:rotate(180deg) scale(1.15)}
+#tagsel .mtb.on{background:radial-gradient(circle at 35% 30%,#ffd0f0,#c04bff 55%,#5a1f8e);color:#fff}
+#tagsel .tile .mtb{bottom:14px}
+#tagsel .scard .pw .mtb{width:26px;height:26px;font-size:15px;right:4px;bottom:4px}
+#tagsel .scard .pw .fm{position:absolute;left:3px;bottom:5px;font:italic 900 9px Arial;color:#fff;background:#000a;border-radius:3px;padding:0 4px}
+#tagsel .tsbtns{bottom:18px;gap:10px}#tagsel .tsbtns .btn{min-height:38px;min-width:96px;font-size:13px}
+#tagsel .tsbtns .vsx{font-size:30px}
+#tagsel .mtb{touch-action:manipulation}
 /* phone (landscape) */
 #duel.tag.tphone{grid-template-columns:150px 1fr 150px !important}
 #duel.tag.tphone #tagR{grid-column:3}
@@ -5953,12 +5991,16 @@ function openTagSelect(opts){opts=opts||{};SEAT.online=opts.online||null;if(!SEA
   if(!SEAT.online)SEAT.human=[true,false,false,false];SEAT.cur=SEAT.online?SEAT.online.mySeat:0;
   mkScreen("tagsel");showScreen("tagsel");renderTagSelect();}
 window.openTagSelect=openTagSelect;window.renderTagSelect=()=>renderTagSelect();window.TAGSEAT=SEAT;
+const TMODES={kelvin:"darkkelvin",weiyao:"weiyao2",eryll:"eryll2",keith:"keith2",lemon:"lemon2",weisheng:"weisheng2",clement:"clement2"};
+const TMBASE={};for(const k in TMODES)TMBASE[TMODES[k]]=k;
+const tBase=c=>TMBASE[c]||c;const tFlip=c=>TMODES[c]&&CHARS[TMODES[c]]?TMODES[c]:(TMBASE[c]||c);const tDual=c=>!!(TMODES[tBase(c)]&&CHARS[TMODES[tBase(c)]]);
+window.tagFlipSeat=i=>{SEAT.chars[i]=tFlip(SEAT.chars[i]);renderTagSelect();};
 function seatCard(i){const ch=SEAT.chars[i];const C=CHARS[ch]||{};const L=window.LINKS&&LINKS[ch];const team=i%2?"b":"a";const key=["A1","B1","A2","B2"][i];
   const on=SEAT.online;const mine=on?on.mySeat===i:i===0;const canTog=on?on.isHost&&i!==on.mySeat:false;const hum=SEAT.human[i];
   const nm=ch==="you"?(hum&&mine?playerName():"Mystery Duelist"):C.name;
   const who=on?(on.who&&on.who[i]||(hum?"Waiting for a friend…":"AI")):(i===0?`${esc(playerName())} · YOU`:i===2?"Your AI partner":"AI rival");
   const togT=on?(canTog?"Host: switch this seat between Human and AI":"Only the host switches seats"):"Offline: you + AI partner vs 2 AI. Human seats are for online play.";
-  return `<div class="scard ${team} ${SEAT.cur===i?"cur":""}" data-seat="${i}" style="--c:${C.color||"#7cf"}"><img class="big" src="${P_(ch)}" alt=""><span class="key">${key}</span>
+  return `<div class="scard ${team} ${SEAT.cur===i?"cur":""}" data-seat="${i}" style="--c:${C.color||"#7cf"}"><div class="pw"><img class="big" src="${P_(ch)}" alt="">${tDual(ch)?`<span class="fm">${TMBASE[ch]?"ALT FORM":"BASE"}</span><span class="mtb ${TMBASE[ch]?"on":""}" data-tag-mt="${i}" title="Switch form">⇄</span>`:""}</div><span class="key">${key}</span>
     <div class="inf"><div class="nm">${esc(nm)}</div><div class="who">${esc(who)}</div>
      <div class="tog ${canTog?"":"lock"}" title="${esc(togT)}" data-tog="${i}"><span class="${hum?"on":""}">👤 HUMAN</span><span class="${hum?"":"on ai"}">🤖 AI</span></div>
      <div class="swapi" data-pickfor="${i}" title="Pick this seat's duelist">⇄ ${mine||!on?"pick duelist":"seat duelist"}</div>
@@ -5972,8 +6014,8 @@ function renderTagSelect(){const s=mkScreen("tagsel");const on=SEAT.online;
    <div class="tcol b"><div class="tl">TEAM B</div>${seatCard(1)}${seatCard(3)}</div>
    <div class="tmid">${on?`<div class="troom" id="troom">${on.roomHTML||""}</div>`:""}
     <div class="torder"><span class="lab">TURN ORDER</span>${order}</div><div style="font-size:10.5px;opacity:.7">Each team shares one field · own deck, hand, LP and Link</div>
-    <div class="tgrid">${CHAR_ORDER.map(c=>{const C=CHARS[c];const tg=(tags[c]||[]).map(i=>`<span class="tt" style="--c:${CHARS[SEAT.chars[i]].color};${i%2?"right:2px":"left:2px"}">${["A1","B1","A2","B2"][i]}</span>`).join("");
-      return `<div class="tile ${tags[c]?"has":""}" data-ch="${c}" style="--c:${C.color}" title="${esc(C.name)}"><img src="${PORTRAITS[C.img]}" alt="">${tg}<div class="tn">${esc(c==="you"?"You":C.name)}</div></div>`;}).join("")}</div></div>
+    <div class="tgrid">${CHAR_ORDER.filter(c=>!TMBASE[c]).map(b=>{const cs=SEAT.chars[SEAT.cur];const c=tDual(b)&&tBase(cs)===b?cs:b;const C=CHARS[c];const ti=[];SEAT.chars.forEach((x,i)=>{if(tBase(x)===b)ti.push(i);});const tg=ti.map(i=>`<span class="tt" style="--c:${CHARS[SEAT.chars[i]].color};${i%2?"right:2px":"left:2px"}">${["A1","B1","A2","B2"][i]}</span>`).join("");
+      return `<div class="tile ${ti.length?"has":""} ${TMBASE[c]?"alt":""}" data-ch="${c}" style="--c:${C.color}" title="${esc(C.name)}"><img src="${PORTRAITS[C.img]}" alt="">${tg}${tDual(b)?`<span class="mtb ${TMBASE[c]?"on":""}" data-tile-mt="${c}" title="Pick the other form">⇄</span>`:""}<div class="tn">${esc(c==="you"?"You":C.name)}</div></div>`;}).join("")}</div></div>
    <div class="tsbtns"><button class="btn" id="ts-back">◀ Back</button><button class="btn" id="ts-rnd">🎲 Random</button><span class="vsx">VS</span><button class="btn" id="ts-swap">⇄ Swap teams</button><button class="btn red" id="ts-go" ${on&&!on.isHost?"disabled":""}>${on&&!on.isHost?"WAITING FOR HOST":"START DUEL ▶"}</button></div>
    <div class="tsfoot">${on?"Host only: Human ⇄ AI toggles and Start. Guests pick a duelist on their own seat. AI fills any empty seat.":"VS AI: you (A1) + an AI partner (A2) vs two AI rivals (B1, B2). Turn order A1 › B1 › A2 › B2."}</div>`;
   s.onclick=onSelClick;}
@@ -5982,6 +6024,8 @@ function onSelClick(e){const on=SEAT.online;
   const rm=e.target.closest("[data-troom]");if(rm){if(on&&on.onRoom)on.onRoom(rm.dataset.troom,rm,e);return;} /* v13: online room controls */
   if(e.target.closest("input,select,textarea"))return;
   const tg=e.target.closest("[data-tog]");if(tg){const i=+tg.dataset.tog;if(on&&on.isHost&&i!==on.mySeat){SEAT.human[i]=!SEAT.human[i];if(on.onChange)on.onChange("human",i);renderTagSelect();}else flash(tg);return;}
+  const smt=e.target.closest("[data-tag-mt]");if(smt){e.stopPropagation();const i=+smt.dataset.tagMt;if(!canPick(i)){flash(smt);return;}SEAT.chars[i]=tFlip(SEAT.chars[i]);try{snd("click");}catch(_){}if(on&&on.onChange)on.onChange("char",i);renderTagSelect();return;}
+  const tmt=e.target.closest("[data-tile-mt]");if(tmt){e.stopPropagation();const i=SEAT.cur;if(!canPick(i)){flash(tmt);return;}SEAT.chars[i]=tFlip(tmt.dataset.tileMt);try{snd("click");}catch(_){}if(on&&on.onChange)on.onChange("char",i);renderTagSelect();return;}
   const sc=e.target.closest("[data-seat]");const tile=e.target.closest("[data-ch]");
   if(tile){const i=SEAT.cur;if(!canPick(i)){flash(tile);return;}SEAT.chars[i]=tile.dataset.ch;snd("click");if(on&&on.onChange)on.onChange("char",i);
     if(!on){const ord=[0,1,2,3];SEAT.cur=ord[(ord.indexOf(i)+1)%4];}renderTagSelect();return;}
