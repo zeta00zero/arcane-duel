@@ -463,14 +463,22 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 </style>
 </head>
 <body>
+<div id="v17s" style="position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;min-height:100vh;z-index:100003;background:#1a0f33;background:radial-gradient(circle at 50% 42%,#3a2470 0%,#140b2a 60%,#07040f 100%);color:#ffe9b0;text-align:center;font-family:'Trebuchet MS',Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent">
+<div style="width:120px;height:120px;border-radius:50%;background:#e0a838;background:linear-gradient(#ffd36b,#c88a22);box-shadow:0 0 40px #ffb84d88;position:relative;margin:0 auto 26px"><div style="position:absolute;left:46px;top:32px;width:0;height:0;border-top:28px solid transparent;border-bottom:28px solid transparent;border-left:44px solid #1d0f38"></div></div>
+<div style="font-size:30px;font-weight:bold;letter-spacing:5px;color:#ffd36b;text-shadow:0 0 14px #ffb84d">TAP TO START</div>
+<div style="font-size:20px;font-weight:bold;letter-spacing:6px;margin-top:14px;color:#fff1cc">ARCANE DUEL CHRONICLES</div>
+<div id="v17m" style="font-size:13px;letter-spacing:3px;margin-top:16px;color:#cdb8ff">TAP ANYWHERE TO PLAY THE OPENING</div>
+<div style="position:absolute;left:0;right:0;bottom:18px;font-size:12px;color:#bba6e6;letter-spacing:1px">v17 &middot; If nothing happens: <a href="?noopening" style="color:#ffd36b">start without opening</a> &middot; <a href="?diag" style="color:#ffd36b">diagnostics</a></div>
+<noscript><div style="margin-top:20px;color:#ff9b9b">JavaScript is turned off &mdash; Arcane Duel needs it.</div></noscript>
+</div>
 <script>
-/* ================= v16: EARLY BOOT + VIDEO OPENING. Runs before the 23 MB game script, so the opening (or TAP TO START) and a loader
+/* ================= v17: EARLY BOOT + VIDEO OPENING. Runs before the 23 MB game script, so the opening (or TAP TO START) and a loader
    paint within the first ~50 KB instead of after the whole page has downloaded. The opening never blocks the game:
    it can be skipped at any time, falls back after 8/15 s without frames, and the game starts underneath on its own.
    Also: a start-up failsafe shows any script error instead of a black screen (and ?diag shows a status line). ================= */
 (function(){"use strict";
 var Q=location.search||"",H=location.hash||"";
-var ERRS=[];window.__bootErrs=ERRS;var LOG=[];window.__vopLog=LOG;function lg(m){var t=((Date.now()-(window.__vopT0||(window.__vopT0=Date.now())))/1000).toFixed(1);LOG.push(t+"s "+m);try{console.log("[vop v16] "+t+"s "+m);}catch(e){}}
+var ERRS=[];window.__bootErrs=ERRS;var LOG=[];window.__vopLog=LOG;function lg(m){var t=((Date.now()-(window.__vopT0||(window.__vopT0=Date.now())))/1000).toFixed(1);LOG.push(t+"s "+m);try{console.log("[vop v17] "+t+"s "+m);}catch(e){}}
 addEventListener("error",function(e){try{ERRS.push((e.message||(e.target&&e.target.src)||"error")+(e.lineno?" @"+e.lineno+":"+e.colno:""));}catch(x){}},true);
 addEventListener("unhandledrejection",function(e){try{ERRS.push("promise: "+(e.reason&&e.reason.message||e.reason));}catch(x){}});
 var css="#vop{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;z-index:100000;background:#000;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}"+
@@ -479,7 +487,7 @@ var css="#vop{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100
 "#vop .vload{position:absolute;left:50%;top:50%;-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);z-index:3;display:none;text-align:center;color:#e9d9ff;font:bold 15px/1 'Trebuchet MS',sans-serif;letter-spacing:5px;text-shadow:0 0 10px #9b5fff;pointer-events:none}"+
 "#vop .vload i{display:block;margin:0 auto 14px;width:34px;height:34px;border-radius:50%;border:3px solid #ffd36b33;border-top-color:#ffd36b;-webkit-animation:vopSpin .9s linear infinite;animation:vopSpin .9s linear infinite}"+
 "#vop.loading .vload{display:block}"+
-"#vop .vtap{position:absolute;top:0;left:0;right:0;bottom:0;z-index:4;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;padding:20px;text-align:center;color:#ffe9b0;font:bold 20px/1.3 'Trebuchet MS',sans-serif;letter-spacing:5px;cursor:pointer;background:radial-gradient(circle at 50% 45%,#3a2470 0,#160d2c 45%,#05030b 100%)}"+
+"#v17s~#vop .vtap,#vop .vtap{position:absolute;top:0;left:0;right:0;bottom:0;z-index:4;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;padding:20px;text-align:center;color:#ffe9b0;font:bold 20px/1.3 'Trebuchet MS',sans-serif;letter-spacing:5px;cursor:pointer;background:radial-gradient(circle at 50% 45%,#3a2470 0,#160d2c 45%,#05030b 100%)}"+
 "#vop .vtap .pl{width:96px;height:96px;margin-bottom:22px;border-radius:50%;background:linear-gradient(180deg,#f3c45a,#b07a1c);box-shadow:0 0 30px #ffd36b88;position:relative;-webkit-animation:vopPulse 1.6s ease-in-out infinite;animation:vopPulse 1.6s ease-in-out infinite}"+
 "#vop .vtap .pl:after{content:'';position:absolute;left:38px;top:28px;border-style:solid;border-width:20px 0 20px 32px;border-color:transparent transparent transparent #1a0f33}"+
 "#vop .vtap h3{margin:0 0 8px;font-size:24px;letter-spacing:6px;color:#ffd36b;text-shadow:0 0 14px #9b5fff}"+
@@ -508,7 +516,7 @@ function build(){el=document.createElement("div");el.id="vop";
   (document.body||document.documentElement).appendChild(el);vid=el.querySelector("video");
   vid.setAttribute("playsinline","");vid.setAttribute("webkit-playsinline","");vid.playsInline=true;
   var o=vol();vid.muted=o.m||o.v===0;vid.volume=o.v||1; /* set once, before any gesture; never changed later */
-  var prog=function(){if(!vid)return;var t=vid.currentTime;if(t>0&&t!==lastT){lastT=t;lastMove=now();if(!V.progressed){V.progressed=true;V.firstFrameAt=now();}loading(false);}};
+  var prog=function(){if(!vid)return;var t=vid.currentTime;if(t>0&&t!==lastT){lastT=t;lastMove=now();if(!V.progressed){V.progressed=true;V.firstFrameAt=now();hideS();}loading(false);}};
   vid.addEventListener("timeupdate",prog);vid.addEventListener("playing",prog);
   vid.addEventListener("waiting",function(){if(V.state==="play")loading(true);});
   vid.addEventListener("ended",function(){if(V.state==="play")end(false);});
@@ -526,7 +534,7 @@ function play(){V.state="play";V.plays++;tryAt=lastMove=now();if(!firstTry)first
 function tap(){if(!el)return;lg("show TAP TO START");V.state="tap";loading(false);try{vid.pause();}catch(e){}
   if(!el.querySelector(".vtap"))el.insertAdjacentHTML("beforeend",'<div class="vtap"><div class="pl"></div><h3>TAP TO START</h3><span>ARCANE DUEL CHRONICLES</span><b>'+(TOUCH?"TAP ANYWHERE TO PLAY THE OPENING":"CLICK &middot; TAP &middot; ENTER")+'</b></div>');}
 /* synchronous on purpose: called straight from touchend / click / keydown so iOS + Android count it as the user gesture */
-function startFromTap(){if(!el)return;lg("tap -> play");if(V.vidErr&&V.errRetry){V.why="error";end(false);return;}if(V.vidErr){V.errRetry=1;V.vidErr=0;retries=1;}var t=el.querySelector(".vtap");if(t)t.remove();V.tapAt=V.tapAt||now();
+function startFromTap(){if(!el)return;hideS();lg("tap -> play");if(V.vidErr&&V.errRetry){V.why="error";end(false);return;}if(V.vidErr){V.errRetry=1;V.vidErr=0;retries=1;}var t=el.querySelector(".vtap");if(t)t.remove();V.tapAt=V.tapAt||now();
   if(vid.readyState<2||retries>0){try{vid.load();}catch(e){}}
   tryAt=now();play();
   try{if(A()&&A().unlock)A().unlock();}catch(e){}}
@@ -534,7 +542,7 @@ function afterEnd(){if(!V.gameReady){pendingAfter=true;return;}pendingAfter=fals
   var f=V.after;V.after=null;
   if(f){setTimeout(f,GUARD);return;}
   setTimeout(function(){try{var O=window.__opening;if((!O||O.state==="done")&&typeof CUR!=="undefined"&&CUR==="menu"&&A())A().music("menu");}catch(e){}},GUARD);}
-function end(skipped){if(V.state==="off")return;if(!skipped&&TOUCH&&!V.tapAt){lg("blocked auto-end before tap ("+V.why+")");V.why="";if(V.state!=="tap")tap();return;}lg("end skipped="+!!skipped+" why="+V.why);V.state="off";if(skipped)V.skips++;clearInterval(wd);
+function end(skipped){if(V.state==="off")return;if(!skipped&&TOUCH&&!V.tapAt){lg("blocked auto-end before tap ("+V.why+")");V.why="";if(V.state!=="tap")tap();return;}lg("end skipped="+!!skipped+" why="+V.why);V.state="off";hideS();if(skipped)V.skips++;clearInterval(wd);
   try{vid.pause();vid.removeAttribute("src");vid.load();}catch(e){}if(el&&el.parentNode)el.parentNode.removeChild(el);el=vid=null;
   guardUntil=now()+GUARD;
   if(replay){replay=false;try{if(typeof CUR!=="undefined"&&CUR==="menu"&&A())A().music("menu");}catch(e){}return;}
@@ -573,7 +581,7 @@ V.ready=function(){if(V.gameReady)return;V.gameReady=true;if(V.state==="off"&&pe
 function hasCur(){try{return typeof CUR!=="undefined";}catch(e){return false;}}
 function failCheck(){var ok=window.__adcMainDone&&hasCur()&&document.querySelector(".screen.on");if(ok)return;
   var b=document.getElementById("adc-boot");if(b)b.parentNode.removeChild(b);
-  if(document.getElementById("vfail"))return;var d=document.createElement("div");d.id="vfail";
+  try{hideS();}catch(e){}if(document.getElementById("vfail"))return;var d=document.createElement("div");d.id="vfail";
   d.innerHTML="<h2 style='color:#ffd36b;margin-top:0'>Arcane Duel could not start</h2><p>Please reload. If it keeps happening, send a screenshot of this screen.</p><pre style='white-space:pre-wrap;font-size:12px;opacity:.85'></pre><button type=button id=vf-r>Reload</button><button type=button id=vf-n>Reload without opening</button>";
   document.body.appendChild(d);d.querySelector("pre").textContent=(ERRS.length?ERRS.join("\n"):"(no error message: the page may have run out of memory)")+"\n\n"+navigator.userAgent;
   d.querySelector("#vf-r").onclick=function(){location.reload();};d.querySelector("#vf-n").onclick=function(){location.href=location.pathname+"?noopening";};}
@@ -581,7 +589,8 @@ addEventListener("load",function(){V.ready();setTimeout(failCheck,1500);});
 document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){if(hasCur())V.ready();},0);});
 if(/[?&]diag\b/.test(Q)){var dg=document.createElement("div");dg.id="vdiag";document.documentElement.appendChild(dg);
   setInterval(function(){var v=document.querySelector("#vop video");dg.textContent="op:"+V.state+" "+V.why+" src:"+SRC+" touch:"+TOUCH+" game:"+V.gameReady+(hasCur()?" cur:"+CUR:"")+(v?" t:"+v.currentTime.toFixed(1)+" rs:"+v.readyState+" ns:"+v.networkState+(v.error?" err:"+v.error.code:""):"")+" "+((Date.now()-V.t0)/1000|0)+"s"+(ERRS.length?"\nERR "+ERRS.slice(-3).join(" | "):"");},500);}
-if(SKIP)return;
+function hideS(){var x=document.getElementById("v17s");if(x&&x.parentNode)x.parentNode.removeChild(x);}
+if(SKIP){hideS();return;}
 build();
 if(TOUCH)tap();else play();
 })();
