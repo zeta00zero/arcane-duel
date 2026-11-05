@@ -113,8 +113,14 @@ function drawBattle(){const A=G.anim,t=A.t,pl=A.att===G.u;
 }
 function applyDmg(A){A.def.hp=Math.max(0,A.def.hp-A.dmg);}
 // ---------- flow ----------
+const FXMAP={fist:'fist',beam:'beam',sword:'sword',ult:'ultimate'};
+function fullBattle(fx,done){const atk=FXMAP[fx]||'fist';G.anim={full:true,t:0};const f=document.createElement('iframe');f.id='rdfBattle';
+ f.src='battle/index.html?attack='+atk+'&embed=1&sky=sunset';f.allow='autoplay';f.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:50;background:#000';
+ let fin=false;const end=()=>{if(fin)return;fin=true;removeEventListener('message',onM);f.remove();G.anim=null;done();};
+ const onM=ev=>{if(ev.data&&ev.data.type==='rdf-battle-done'&&ev.source===f.contentWindow)end();};addEventListener('message',onM);
+ document.body.appendChild(f);setTimeout(()=>{try{f.contentWindow.focus();}catch(e){}},50);window.__rdfEndBattle=end;}
 function doPlayerAttack(e){const a=G.atk,u=G.u;u.en-=a.en;const dmg=Math.round(a.p*defT(e)*(0.92+Math.random()*0.16)/10)*10;G.mode='idle';G.trange=null;
- startBattle(u,e,dmg,a,()=>{G.msg=e.hp<=0?e.name+' destroyed! '+alive().length+' enemies remain.':'Hit '+e.name+' for '+dmg+'.';u.acted=true;checkEnd()||endPlayer();});}
+ fullBattle(a.fx,()=>{applyDmg({def:e,dmg});G.msg=e.hp<=0?e.name+' destroyed! '+alive().length+' enemies remain.':'Hit '+e.name+' for '+dmg+'.';u.acted=true;checkEnd()||endPlayer();});}
 function checkEnd(){if(alive().length===0){G.scene='win';return true;}if(G.u.hp<=0){G.scene='lose';return true;}return false;}
 function endPlayer(){G.mode='idle';G.moves=null;G.phase='enemy';G.banner={txt:'ENEMY PHASE',t:1.2};G.q=alive().slice();G.wait=1.2;}
 function enemyStep(){const e=G.q.shift();if(!e){G.turn++;G.phase='player';G.u.acted=false;G.u.en=Math.min(G.u.men,G.u.en+20);G.banner={txt:'PLAYER PHASE',t:1.2};G.msg='Turn '+G.turn+': select DESTINED RED UNIT 01. EN RECOVERED 20.';return;}
@@ -138,7 +144,7 @@ cv.addEventListener('mousemove',ev=>{const r=cv.getBoundingClientRect();mouse.x=
 cv.addEventListener('contextmenu',ev=>{ev.preventDefault();if(G&&G.scene==='map')cancel();});
 cv.addEventListener('mousedown',ev=>{if(ev.button!==0)return;const r=cv.getBoundingClientRect();mouse.x=(ev.clientX-r.left)*W/r.width;mouse.y=(ev.clientY-r.top)*H/r.height;click();});
 function click(){if(!G||G.scene!=='map'){if(!G||G.scene==='win'||G.scene==='lose'||G.scene==='title'){newGame();}return;}
- if(G.anim){G.anim.t=Math.max(G.anim.t,G.anim.len-0.3);if(!G.anim.hit){G.anim.hit=true;applyDmg(G.anim);}return;}
+ if(G.anim){if(G.anim.full)return;G.anim.t=Math.max(G.anim.t,G.anim.len-0.3);if(!G.anim.hit){G.anim.hit=true;applyDmg(G.anim);}return;}
  if(inR(BTN.end))return endTurn();if(inR(BTN.wait))return wait();
  if(G.mode==='action'){for(const m of menu)if(m.ok&&inR(m.r))return chooseAtk(m.a);}
  const cx=Math.floor((mouse.x-OX)/CS),cy=Math.floor((mouse.y-OY)/CS);if(cx>=0&&cy>=0&&cx<CW&&cy<CH){if(G.mode==='move'&&cx===G.u.x&&cy===G.u.y){G.mode='action';G.msg='Choose an attack or WAIT.';return;}clickMap(cx,cy);}}
@@ -159,7 +165,7 @@ G={scene:'title'};let last=performance.now(),T=0;
 function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;T+=dt;
  if(G.scene==='title'){drawTitle(T);}
  else if(G.scene==='map'){G.t+=dt;if(G.banner)G.banner.t-=dt;
-  if(G.anim){G.anim.t+=dt;drawBattle();if(G.anim.t>=G.anim.len){const d=G.anim.done;G.anim=null;d();}}
+  if(G.anim&&G.anim.full){drawMap();}else if(G.anim){G.anim.t+=dt;drawBattle();if(G.anim.t>=G.anim.len){const d=G.anim.done;G.anim=null;d();}}
   else{if(G.phase==='enemy'&&!G.anim){G.wait-=dt;if(G.wait<=0){G.wait=99;enemyStep();}}drawMap();}}
  else drawEnd(G.scene==='win');
  requestAnimationFrame(frame);}
