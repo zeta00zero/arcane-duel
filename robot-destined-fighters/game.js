@@ -3,8 +3,11 @@
 const W=640,H=400,CW=10,CH=7,CS=44,OX=8,OY=30;
 const cv=document.getElementById('view'),X=cv.getContext('2d');X.imageSmoothingEnabled=false;
 const F=window.FONT,SM=window.SPRMETA;
-const img=s=>{const i=new Image();i.src='assets/'+s;return i;};
-const IM={spr:img('sprites.png'),sky:img('sky_sunset.png'),port:img('port_small.png')};
+const img=s=>{const i=new Image();i.decoding='async';i.src='assets/'+s;return i;};
+const IM={sky:img('sky_sunset.png'),port:img('port_small.png')};
+function blit(im,x,y,w,h){if(im&&im.complete&&im.naturalWidth)try{X.drawImage(im,x,y,w,h);}catch(e){}}
+function fitMap(){const vv=window.visualViewport;const vw=vv?vv.width:innerWidth,vh=vv?vv.height:innerHeight;let s=Math.min(vw/W,vh/H);if(!(s>0))s=1;if(s>=2)s=Math.floor(s);cv.style.width=(W*s)+'px';cv.style.height=(H*s)+'px';}
+addEventListener('resize',fitMap);if(window.visualViewport)visualViewport.addEventListener('resize',fitMap);addEventListener('orientationchange',()=>setTimeout(fitMap,80));fitMap();
 const MAPNAME='STAGE 1: CRIMSON HARBOR';
 // terrain: . plain, # ruin (blocked), ^ forest (def+), = road
 const TER=["..^...#...","..^.....^.","#...=.=...","....===..#",".^..=.=.^.","....#.....","...^......"];
@@ -30,10 +33,8 @@ function reach(sx,sy,mv,self){const d={},q=[[sx,sy,0]];d[sx+','+sy]=0;const isU=
  return Object.keys(d).map(k=>k.split(',').map(Number)).filter(([x,y])=>!occ(x,y,self));}
 const defT=e=>TER[e.y][e.x]==='^'?0.8:1;
 // ---------- drawing helpers ----------
-const tc={};function tinted(tint){if(!tint)return IM.spr;if(tc[tint])return tc[tint];if(!IM.spr.naturalWidth)return IM.spr;const c=document.createElement('canvas');c.width=IM.spr.width;c.height=IM.spr.height;const x=c.getContext('2d');x.drawImage(IM.spr,0,0);x.globalCompositeOperation='source-atop';x.globalAlpha=0.45;x.fillStyle=tint;x.fillRect(0,0,c.width,c.height);return tc[tint]=c;}
-const wc={};function white(){if(wc.c)return wc.c;if(!IM.spr.naturalWidth)return IM.spr;const c=document.createElement('canvas');c.width=IM.spr.width;c.height=IM.spr.height;const x=c.getContext('2d');x.drawImage(IM.spr,0,0);x.globalCompositeOperation='source-atop';x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);return wc.c=c;}
-function spr(name,x,y,s,flip,tint,flash){const m=SM[name];if(!m||!IM.spr.complete)return;const src=flash?white():tinted(tint);X.save();X.translate(Math.round(x),Math.round(y));if(flip)X.scale(-1,1);
- X.drawImage(src,m.x,m.y,m.w,m.h,Math.round(-m.ax*s),Math.round(-m.ay*s),Math.round(m.w*s),Math.round(m.h*s));X.restore();}
+function spr(name,x,y,s,flip,tint,flash){const m=SM[name];if(!m)return;X.save();X.translate(Math.round(x),Math.round(y));if(flip)X.scale(-1,1);
+ window.RDF_DRAW(X,flash?'#ffffff':(tint||null),m.x,m.y,m.w,m.h,Math.round(-m.ax*s),Math.round(-m.ay*s),Math.round(m.w*s),Math.round(m.h*s),flash?1:0.45);X.restore();}
 function panel(x,y,w,h){X.fillStyle='#05060c';X.fillRect(x-1,y-1,w+2,h+2);X.fillStyle='#9aa3bf';X.fillRect(x,y,w,h);X.fillStyle='#d8deec';X.fillRect(x,y,w,1);X.fillRect(x,y,1,h);X.fillStyle='#141828';X.fillRect(x+2,y+2,w-4,h-4);}
 function bar(x,y,w,v,c){X.fillStyle='#05060c';X.fillRect(x-1,y-1,w+2,8);X.fillStyle='#2a2030';X.fillRect(x,y,w,6);X.fillStyle=c;X.fillRect(x,y,Math.round(w*Math.max(0,v)),6);X.fillStyle='rgba(255,255,255,.35)';X.fillRect(x,y,Math.round(w*Math.max(0,v)),2);}
 const txt=(s,x,y,c='#f0f4ff',sc=1)=>F.draw(X,String(s),x,y,c,sc);
@@ -68,7 +69,7 @@ function drawMap(){X.fillStyle='#0a0c18';X.fillRect(0,0,W,H);
  }
  if(hx>=0&&hy>=0&&hx<CW&&hy<CH){const p=(G.t*4|0)%2;X.strokeStyle=p?'#fff':'#ffd27a';X.lineWidth=2;X.strokeRect(OX+hx*CS+2,OY+hy*CS+2,CS-4,CS-4);}
  // side panel
- const u=G.u;panel(456,30,176,128);X.drawImage(IM.port,462,36,48,56);txt('UNIT 01',516,38,'#ff715c');txt('PILOT',516,52,'#9aa3bf');txt(u.pilot,516,62);txt('MOVE '+u.mv,516,78,'#9aa3bf');
+ const u=G.u;panel(456,30,176,128);blit(IM.port,462,36,48,56);txt('UNIT 01',516,38,'#ff715c');txt('PILOT',516,52,'#9aa3bf');txt(u.pilot,516,62);txt('MOVE '+u.mv,516,78,'#9aa3bf');
  txt('DESTINED RED UNIT 01',462,98,'#fff');txt('HP',462,112);txt(u.hp+'/'+u.mhp,486,112);bar(462,122,164,u.hp/u.mhp,'#40e070');txt('EN',462,134);txt(u.en+'/'+u.men,486,134);bar(462,144,164,u.en/u.men,'#40b0ff');
  // hover info
  panel(456,164,176,72);const he=G.e.find(e=>e.hp>0&&e.x===hx&&e.y===hy);
@@ -89,7 +90,7 @@ const inR=r=>mouse.x>=r[0]&&mouse.y>=r[1]&&mouse.x<r[0]+r[2]&&mouse.y<r[1]+r[3];
 // ---------- battle cut-in ----------
 function startBattle(att,def,dmg,a,done){G.anim={att,def,dmg,a,t:0,len:2.0,done,hit:false,nums:[],parts:[]};}
 function drawBattle(){const A=G.anim,t=A.t,pl=A.att===G.u;
- if(IM.sky.complete)X.drawImage(IM.sky,0,0,1280,720,0,-20,712,400);X.fillStyle='#3a3238';X.fillRect(0,300,W,100);X.fillStyle='#4e464c';for(let i=0;i<W;i+=32)X.fillRect((i-(t*120|0)%32+32)%W,300,16,2);
+ if(IM.sky.complete&&IM.sky.naturalWidth)X.drawImage(IM.sky,0,0,1280,720,0,-20,712,400);else{X.fillStyle='#c45a28';X.fillRect(0,0,W,300);}X.fillStyle='#3a3238';X.fillRect(0,300,W,100);X.fillStyle='#4e464c';for(let i=0;i<W;i+=32)X.fillRect((i-(t*120|0)%32+32)%W,300,16,2);
  const en=pl?A.def:A.att,ex=470,ey=300,hitT=0.85;
  let mx=150,pose='idle';
  if(pl){const f=A.a.fx;if(f==='fist'||f==='sword'){mx=t<0.5?150:t<hitT?150+(t-0.5)/(hitT-0.5)*(ex-120-150):ex-120;pose=t<0.5?'boost':t<hitT+0.4?A.a.pose:'hover';}else{pose=t<0.4?'idle':A.a.pose;}}
@@ -107,7 +108,7 @@ function drawBattle(){const A=G.anim,t=A.t,pl=A.att===G.u;
  // hud
  panel(8,8,250,46);txt(G.u.name,16,14,'#f0f4ff');txt('HP '+G.u.hp,16,28);bar(16,40,234,G.u.hp/G.u.mhp,'#40e070');
  panel(382,8,250,46);txt(en.name,390,14,'#ff715c');txt('HP '+Math.max(0,en.hp),390,28);bar(390,40,234,en.hp/en.mhp,'#ff5040');
- panel(36,318,568,70);X.drawImage(IM.port,44,324,48,56);txt(pl?'CLEMENT':en.name,100,328,'#ffd27a');
+ panel(36,318,568,70);blit(IM.port,44,324,48,56);txt(pl?'CLEMENT':en.name,100,328,'#ffd27a');
  txt(pl?(A.a.counter?'COUNTER! '+A.a.n:A.a.fx==='ult'?'PRISM REQUIEM... SHINE THROUGH!':A.a.n+'!'):A.a.n+'!',100,344,'#fff',2);
  if(A.hit&&t>hitT+0.3&&A.def.hp<=0)txt(pl?'TARGET DESTROYED!':'UNIT 01 IS DOWN...',100,366,'#ff715c',2);
 }
@@ -115,7 +116,7 @@ function applyDmg(A){A.def.hp=Math.max(0,A.def.hp-A.dmg);}
 // ---------- flow ----------
 const FXMAP={fist:'fist',beam:'beam',sword:'sword',ult:'ultimate'};
 function fullBattle(fx,done){const atk=FXMAP[fx]||'fist';G.anim={full:true,t:0};const f=document.createElement('iframe');f.id='rdfBattle';
- f.src='battle/index.html?attack='+atk+'&embed=1&sky=sunset';f.allow='autoplay';f.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:50;background:#000';
+ f.src='battle/index.html?attack='+atk+'&embed=1&sky=sunset';f.allow='autoplay';f.style.cssText='position:fixed;inset:0;width:100%;height:100%;height:100dvh;border:0;z-index:50;background:#000;touch-action:none';
  let fin=false;const end=()=>{if(fin)return;fin=true;removeEventListener('message',onM);f.remove();G.anim=null;done();};
  const onM=ev=>{if(ev.data&&ev.data.type==='rdf-battle-done'&&ev.source===f.contentWindow)end();};addEventListener('message',onM);
  document.body.appendChild(f);setTimeout(()=>{try{f.contentWindow.focus();}catch(e){}},50);window.__rdfEndBattle=end;}
@@ -142,7 +143,7 @@ function wait(){if(G.mode!=='action')return;G.u.acted=true;G.msg='Unit 01 waits.
 function endTurn(){if(G.phase!=='player'||G.anim)return;if(G.mode==='action'||G.mode==='target'){}G.u.acted=true;endPlayer();}
 cv.addEventListener('mousemove',ev=>{const r=cv.getBoundingClientRect();mouse.x=(ev.clientX-r.left)*W/r.width;mouse.y=(ev.clientY-r.top)*H/r.height;});
 cv.addEventListener('contextmenu',ev=>{ev.preventDefault();if(G&&G.scene==='map')cancel();});
-cv.addEventListener('mousedown',ev=>{if(ev.button!==0)return;const r=cv.getBoundingClientRect();mouse.x=(ev.clientX-r.left)*W/r.width;mouse.y=(ev.clientY-r.top)*H/r.height;click();});
+cv.addEventListener('pointerdown',ev=>{if(ev.button!=null&&ev.button!==0)return;ev.preventDefault();const r=cv.getBoundingClientRect();mouse.x=(ev.clientX-r.left)*W/r.width;mouse.y=(ev.clientY-r.top)*H/r.height;click();});
 function click(){if(!G||G.scene!=='map'){if(!G||G.scene==='win'||G.scene==='lose'||G.scene==='title'){newGame();}return;}
  if(G.anim){if(G.anim.full)return;G.anim.t=Math.max(G.anim.t,G.anim.len-0.3);if(!G.anim.hit){G.anim.hit=true;applyDmg(G.anim);}return;}
  if(inR(BTN.end))return endTurn();if(inR(BTN.wait))return wait();
@@ -151,11 +152,11 @@ function click(){if(!G||G.scene!=='map'){if(!G||G.scene==='win'||G.scene==='lose
 addEventListener('keydown',ev=>{const k=ev.key.toLowerCase();if(!G||G.scene!=='map'){if(k==='enter'||k===' '||k==='z')newGame();return;}
  if(k==='x'||k==='escape')cancel();if(k==='e')endTurn();if(k==='w')wait();if(G.mode==='action'&&'1234'.includes(k)){const m=menu[+k-1];if(m&&m.ok)chooseAtk(m.a);}});
 // ---------- title / end ----------
-function drawTitle(t){if(IM.sky.complete)X.drawImage(IM.sky,0,0,1280,720,0,0,712,400);X.fillStyle='rgba(5,6,12,.45)';X.fillRect(0,0,W,H);
+function drawTitle(t){if(IM.sky.complete&&IM.sky.naturalWidth)X.drawImage(IM.sky,0,0,1280,720,0,0,712,400);else{const g=X.createLinearGradient(0,0,0,H);g.addColorStop(0,'#241028');g.addColorStop(0.55,'#c45a28');g.addColorStop(1,'#1a1014');X.fillStyle=g;X.fillRect(0,0,W,H);}X.fillStyle='rgba(5,6,12,.45)';X.fillRect(0,0,W,H);
  spr('hero',470,370,1.25,false,null,false);
  txt('G.CREATION PRESENTS',40,60,'#ffd27a',2);txt('ROBOT',40,100,'#ff715c',6);txt('DESTINED',40,150,'#fff',6);txt('FIGHTERS',40,200,'#fff',6);
  X.fillStyle='#cf2a34';X.fillRect(40,252,300,3);txt('STAGE 1: CRIMSON HARBOR',40,264,'#7eefff',2);
- if((t*2|0)%2===0)txt('CLICK OR PRESS ENTER TO START',40,330,'#fff',2);}
+ if((t*2|0)%2===0)txt(window.RDF_SPRITES_READY&&window.RDF_SPRITES_READY()?'TAP OR PRESS ENTER TO START':'LOADING UNIT 01...',40,330,'#fff',2);}
 function drawEnd(win){drawMap();X.fillStyle='rgba(5,6,12,.75)';X.fillRect(0,110,W,170);
  if(win){spr('hero2',540,280,0.75,false,null,false);txt('STAGE CLEAR!',40,130,'#fff07a',5);txt('ALL 10 ENEMIES DESTROYED',40,185,'#fff',2);txt('TURNS: '+G.turn+'   UNIT 01 HP: '+G.u.hp+'/'+G.u.mhp,40,210,'#7eefff',2);}
  else{txt('GAME OVER',40,130,'#ff715c',5);txt('DESTINED RED UNIT 01 WAS DESTROYED',40,185,'#fff',2);txt('ENEMIES LEFT: '+alive().length,40,210,'#ff715c',2);}
