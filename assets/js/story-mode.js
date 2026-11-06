@@ -7,7 +7,10 @@
                    Chapter 1 has no script yet. Gallery still unlocks if bw1 is already true.
    Gallery unlocks when story.tutorial === true OR legacy story.bw1 === true.
    The anime opening never autoplays, including on boot. It plays only from this
-   prologue (tap to start, skip allowed) or from Gallery after the prologue is cleared. */
+   prologue (tap to start, skip allowed) or from Gallery after the prologue is cleared.
+   Practice partner is Toma (Lily if the hero is Toma), with that duelist's normal deck and LP.
+   Prologue VN uses the c_cafe art and labels the circle Narrator.
+   Every <video> uses the Music slider (not sound effects). */
 "use strict";
 (function(){
 const PLAYER_LOCK={
@@ -68,32 +71,50 @@ const ARCS=[
 ];
 const ARC_BY={};ARCS.forEach(a=>ARC_BY[a.id]=a);
 
-/* One shared prologue for every Battle World duelist. Only the speaker id,
-   portrait, and the name inside the hero lines change. Chapter 1 is unwritten. */
+/* One shared prologue for every Battle World duelist. Only the hero portrait,
+   name, and deck change. The practice partner is Toma (Lily if the hero is Toma):
+   kind, excited, normal deck and LP. Chapter 1 is unwritten. */
+const PRACTICE_POOL=["kaito","ryuga","mira","sakura","toma","lily"];
+let practiceId="";
 function charName(id){
   if(id==="you"&&typeof playerName==="function")return playerName();
   const C=typeof CHARS!=="undefined"&&CHARS[id];
   return (C&&C.name)||"Duelist";
 }
-function prologueScript(id){
+function practicePartner(hero){
+  const skip={};
+  skip[hero]=1;
+  if(typeof modeBase==="function")skip[modeBase(hero)]=1;
+  const pool=PRACTICE_POOL.filter(id=>!skip[id]&&typeof CHARS!=="undefined"&&CHARS[id]);
+  if(pool.indexOf("toma")>=0)return "toma";
+  if(pool.indexOf("lily")>=0)return "lily";
+  return pool[0]||"kaito";
+}
+function prologueScript(id,opp){
   const n=charName(id);
+  const p=charName(opp);
   return [
-    {id:"narrator",name:"Battle World",text:"The concourse is still half-dark. Floodlights test themselves one bank at a time. Banners hang, unlit. Battle World begins tomorrow."},
-    {id:id,text:n+" checks the gate. Battle World begins tomorrow. Tonight I only need to know I can still duel."},
-    {id:"npc",name:"Duelist",text:"You signing in for tomorrow? Don't look at me. I'm nobody. Just checking my deck still shuffles."},
-    {id:id,text:"Then we are the same kind of early. I don't need a crowd yet. I need to know I can still duel."},
-    {id:"npc",name:"Duelist",text:"No names on the floor tonight. No stars, no rivals, no speech at the gate. Just us, killing time."},
-    {id:"npc",name:"Duelist",text:"One practice duel. If you can take me, you sleep better. The real Battle World starts tomorrow."},
+    {id:"narrator",name:"Narrator",text:"The night before Battle World. The tournament gate is still dark. A cafe stays open, and the real duels begin tomorrow."},
+    {id:id,text:n+" steps into the warm light. Battle World begins tomorrow. Tonight I only need to know I can still duel."},
+    {id:opp,text:p+" waves, already grinning. Hey! Tomorrow is the big one, but I wanted a fun duel tonight. No stakes. Just us, for the joy of it."},
+    {id:id,text:"Then we are the same kind of early. I don't need a crowd yet."},
+    {id:opp,text:"Good! I'll play my real deck, straight and happy. If you win, you'll sleep better. The tournament can wait until tomorrow."},
     {id:id,text:"Then let's duel. I want to walk in tomorrow already awake."}
   ];
 }
-function afterWinScript(id){
+function afterWinScript(id,opp){
   const n=charName(id);
+  const p=charName(opp);
   return [
-    {id:id,text:n+" grins at the dark gate. That felt good. Tomorrow, Battle World — I'm ready."},
-    {id:"npc",name:"Duelist",text:"Save the rest for the gate. See you when the lights stay on."},
-    {id:"narrator",name:"Battle World",text:"The night holds its breath. Tomorrow, the gate opens. Tonight, the opening plays.",end:true}
+    {id:id,text:n+" laughs, still buzzing. That felt good. Tomorrow, Battle World — I'm ready."},
+    {id:opp,text:p+" claps, delighted. That was so much fun! Save the rest for tomorrow. I'll be cheering when the gate opens."},
+    {id:"narrator",name:"Narrator",text:"The cafe lights soften. Tomorrow, Battle World begins. Tonight, the opening plays.",end:true}
   ];
+}
+function cafeArt(){
+  try{if(typeof artSrc==="function"){const s=artSrc("c_cafe");if(s)return s;}}catch(e){}
+  if(typeof ART_DATA!=="undefined"&&ART_DATA.c_cafe)return ART_DATA.c_cafe;
+  return "assets/img/202772a95bdf.webp";
 }
 
 const css=document.createElement("style");
@@ -544,20 +565,24 @@ function confirmCast(){
   openPrologue(id);
 }
 function openPrologue(id){
-  view={page:"vn",arc:"bw",lines:prologueScript(id),onDone:()=>beginTutorialDuel(id)};
+  practiceId=practicePartner(id);
+  view={page:"vn",arc:"bw",lines:prologueScript(id,practiceId),onDone:()=>beginTutorialDuel(id,practiceId)};
   vn={i:0,shown:0,full:"",timer:null};
   renderStory();
   showScreen("story");
 }
 function openAfterWin(id){
-  view={page:"vn",arc:"bw",lines:afterWinScript(id),onDone:()=>openStoryOpening()};
+  const opp=practiceId||practicePartner(id);
+  practiceId=opp;
+  view={page:"vn",arc:"bw",lines:afterWinScript(id,opp),onDone:()=>openStoryOpening()};
   vn={i:0,shown:0,full:"",timer:null};
   renderStory();
   showScreen("story");
 }
 
 function renderVN(host){
-  host.innerHTML=`<div class="vn"><button class="btn backbtn" id="st-back" type="button" style="z-index:3">◀ Back</button>
+  const cafe=String(cafeArt()).replace(/"/g,"%22");
+  host.innerHTML=`<div class="vn vn-cafe" style="background:linear-gradient(180deg,rgba(18,10,8,.22),rgba(18,10,8,.5)),url(&quot;${cafe}&quot;) center/cover no-repeat"><button class="btn backbtn" id="st-back" type="button" style="z-index:3">◀ Back</button>
     <div class="vn-hit" id="vn-hit"></div>
     <div class="vn-port" id="vn-port"></div>
     <div class="vn-box"><div class="vn-name" id="vn-name"></div><div class="vn-text" id="vn-text"></div><div class="vn-next" id="vn-next">Tap to continue ▸</div></div></div>`;
@@ -574,10 +599,11 @@ function showVNLine(){
   const col=npc?"#9bb0d0":((C&&C.color)||"#ffd36b");
   const port=document.getElementById("vn-port");
   port.style.setProperty("--c",col);
-  if(npc)port.innerHTML=`<div class="vn-sil" style="--c:${col}"><span></span></div>`;
+  if(line.id==="narrator")port.innerHTML=`<div class="vn-crest">NARRATOR</div>`;
+  else if(npc)port.innerHTML=`<div class="vn-sil" style="--c:${col}"><span></span></div>`;
   else{
     const img=portOf(line.id);
-    port.innerHTML=img?`<img src="${img}" alt="">`:`<div class="vn-crest">BATTLE<br>WORLD</div>`;
+    port.innerHTML=img?`<img src="${img}" alt="">`:`<div class="vn-crest">NARRATOR</div>`;
   }
   const nm=document.getElementById("vn-name");
   nm.textContent=name;nm.style.background=col;nm.style.color="#1a1008";
@@ -606,31 +632,22 @@ function finishLines(){
   if(typeof done==="function")done();
 }
 
-/* ---------- tutorial duel ---------- */
-const ROOKIE_SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 440"><rect width="330" height="440" fill="#141820"/><ellipse cx="165" cy="150" rx="70" ry="76" fill="#2a3140"/><path d="M70 250c20-40 50-60 95-60s75 20 95 60v160H70z" fill="#1c2230"/><path d="M40 120c30 10 50 70 50 120H90C70 180 50 140 40 120z" fill="#10141c"/><path d="M290 120c-30 10-50 70-50 120h0c20-60 40-100 50-120z" fill="#10141c"/></svg>`;
-const ROOKIE_DECK={l_sprite:3,m_drone:3,w_trainee:3,s_apprentice:3,t_squirrel:3,lm_intern:3,sb_bun:3,c_kitten:3,v_buggy:3,cl_bit:3};
-function ensureRookie(){
-  if(typeof CHARS==="undefined")return;
-  if(!CHARS.rookie){
-    CHARS.rookie={name:"Rookie Duelist",img:"rookie",race:null,color:"#8aa0c8",theme:"A nameless duelist",
-      quote:"One practice duel.",
-      lines:{start:["Let's keep it simple."],summon:["This one."],ace:["That's my best."],attack:["Go."],trap:["Wait."],hurt:["Ah—"],win:["I got lucky."],lose:["Okay. You're ready."]}};
-  }
-  if(typeof PORTRAITS!=="undefined"&&!PORTRAITS.rookie)PORTRAITS.rookie="data:image/svg+xml,"+encodeURIComponent(ROOKIE_SVG);
-}
-function beginTutorialDuel(id){
-  ensureRookie();
+/* ---------- tutorial duel: Toma (or Lily if the hero is Toma), normal deck and LP ---------- */
+function beginTutorialDuel(id,opp){
   const p=id||protagonist();
+  const rival=opp||practiceId||practicePartner(p);
+  practiceId=rival;
   if(typeof startDuel!=="function"){try{toast("Could not start the practice duel.");}catch(e){}return;}
-  startDuel(p,"rookie",{storyTutorial:true,first:"player",arena:"stadium",names:{enemy:"Rookie Duelist"},decks:{enemy:ROOKIE_DECK}});
+  startDuel(p,rival,{storyTutorial:true,first:"player",arena:"cat_cafe"});
 }
 function showTutorialLoss(){
   const layer=document.getElementById("modalLayer");
+  const who=charName(practiceId||practicePartner(protagonist()));
   if(!layer){if(typeof leaveDuel==="function")leaveDuel();openCast();return;}
   layer.innerHTML=`<div class="modal-bg"><div class="modal" style="width:480px;text-align:center"><h2>Not yet</h2>
-    <p>The practice duel is still open. The rookie is only holding small monsters — try again.</p>
+    <p>${esc(who)} is still smiling. The practice duel is for fun — try again.</p>
     <div class="btnrow" style="display:flex;gap:10px;justify-content:center"><button class="btn gold" id="tut-retry" type="button">Retry duel</button><button class="btn" id="tut-back" type="button">Back</button></div></div></div>`;
-  layer.querySelector("#tut-retry").onclick=()=>{layer.innerHTML="";beginTutorialDuel(protagonist());};
+  layer.querySelector("#tut-retry").onclick=()=>{layer.innerHTML="";beginTutorialDuel(protagonist(),practiceId);};
   layer.querySelector("#tut-back").onclick=()=>{layer.innerHTML="";if(typeof leaveDuel==="function")leaveDuel();openCast();};
 }
 
@@ -674,6 +691,7 @@ function renderOpening(host){
     try{if(typeof AUDIO!=="undefined"){AUDIO.unlock();AUDIO.duck("story",0);}}catch(e){}
     if(!video.getAttribute("src"))video.src=SRC720;
     tap.style.display="none";
+    tuneVideo(video);
     const p=video.play();
     if(p&&p.then)p.then(()=>{pp.textContent="Pause";}).catch(()=>{tap.style.display="flex";try{AUDIO.duck("story",null);}catch(e){}});
   }
@@ -759,6 +777,7 @@ function openPlayer(){
     try{if(typeof AUDIO!=="undefined"){AUDIO.unlock();AUDIO.duck("gallery",0);}}catch(e){}
     if(!video.getAttribute("src"))video.src=SRC720;
     tap.style.display="none";
+    tuneVideo(video);
     const p=video.play();
     if(p&&p.then)p.then(()=>{paintTime();}).catch(()=>{
       tap.style.display="flex";
@@ -841,11 +860,7 @@ if(typeof startDuel==="function"){
   startDuel=function(p,e,opts){
     if(adcPlayerLocked(p)){lockToast(p);return;}
     const r=prev.apply(this,arguments);
-    if(opts&&opts.storyTutorial&&typeof G!=="undefined"&&G){
-      G.storyTutorial=true;
-      if(G.sides&&G.sides.enemy)G.sides.enemy.lp=3000;
-      try{render();}catch(err){}
-    }
+    if(opts&&opts.storyTutorial&&typeof G!=="undefined"&&G)G.storyTutorial=true;
     return r;
   };
 }
@@ -889,4 +904,73 @@ if(typeof netHostStartDuel==="function"){
     return prev.apply(this,arguments);
   };
 }
+
+/* Every <video> follows the Music slider (AUDIO.set.music) and Mute all.
+   Sound-effect volume is not used. Ducking the music bed for a clip does not
+   silence the video: the slider value itself is the video volume. */
+function musicVideoLevel(){
+  try{
+    const s=typeof AUDIO!=="undefined"&&AUDIO.set;
+    if(!s)return 1;
+    if(s.mute)return 0;
+    const m=+s.music;
+    if(!isFinite(m))return 1;
+    return Math.max(0,Math.min(1,m));
+  }catch(e){return 1;}
+}
+let tuningVideo=false;
+function tuneVideo(v){
+  if(!v||v.nodeName!=="VIDEO"||tuningVideo)return;
+  tuningVideo=true;
+  try{
+    const level=musicVideoLevel();
+    if(Math.abs((v.volume||0)-level)>0.001)v.volume=level;
+    const silent=level<=0;
+    if(v.muted!==silent)v.muted=silent;
+  }catch(e){}
+  tuningVideo=false;
+}
+function tuneAllVideos(){
+  try{document.querySelectorAll("video").forEach(tuneVideo);}catch(e){}
+}
+window.adcMusicVideoLevel=musicVideoLevel;
+window.adcTuneVideos=tuneAllVideos;
+if(typeof AUDIO!=="undefined"&&typeof AUDIO.setVol==="function"){
+  const prevVol=AUDIO.setVol;
+  AUDIO.setVol=function(k,v){
+    const r=prevVol.apply(this,arguments);
+    if(k==="music"||k==="mute")tuneAllVideos();
+    return r;
+  };
+}
+try{
+  const proto=window.HTMLVideoElement&&HTMLVideoElement.prototype;
+  const desc=window.HTMLMediaElement&&Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,"volume");
+  if(proto&&desc&&desc.set&&!proto.adcMusicVol){
+    Object.defineProperty(proto,"volume",{
+      configurable:true,enumerable:true,
+      get(){return desc.get.call(this);},
+      set(){desc.set.call(this,musicVideoLevel());}
+    });
+    proto.adcMusicVol=true;
+  }
+  if(proto&&!proto.adcMusicPlay){
+    const origPlay=proto.play;
+    proto.play=function(){tuneVideo(this);return origPlay.apply(this,arguments);};
+    proto.adcMusicPlay=true;
+  }
+}catch(e){}
+document.addEventListener("volumechange",e=>{if(e.target&&e.target.nodeName==="VIDEO")tuneVideo(e.target);},true);
+document.addEventListener("play",e=>{if(e.target&&e.target.nodeName==="VIDEO")tuneVideo(e.target);},true);
+try{
+  const mo=new MutationObserver(recs=>{
+    recs.forEach(rec=>rec.addedNodes&&rec.addedNodes.forEach(n=>{
+      if(!n||n.nodeType!==1)return;
+      if(n.nodeName==="VIDEO")tuneVideo(n);
+      else if(n.querySelectorAll)n.querySelectorAll("video").forEach(tuneVideo);
+    }));
+  });
+  mo.observe(document.documentElement,{childList:true,subtree:true});
+}catch(e){}
+tuneAllVideos();
 })();
