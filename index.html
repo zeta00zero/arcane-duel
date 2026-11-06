@@ -4781,7 +4781,8 @@ document.addEventListener("visibilitychange",()=>{const m=$("#menu");if(m)m.clas
 
 /* ---------------- CIRCULAR SELECT (generic; used offline for player+rival and by the online lobby) ---------------- */
 function tileHTML(b){const c=eff(b),C=CHARS[c];const alt=c!==b;
-  return `<div class="rt ${alt?"alt-"+MODE_LOOK[c]:""}" data-b="${b}" style="--c:${C.color}"><div class="face"><img src="${PORTRAITS[C.img]}" alt=""><div class="tn">${esc(nm(c))}</div></div>${MODES[b]?`<div class="mt" data-mt="${b}" title="Switch mode: ${esc(CHARS[MODES[b]].name)} / ${esc(CHARS[b].name)}">⇄</div>`:""}</div>`;}
+  const role=window.adcLockRole?adcLockRole(c):"";
+  return `<div class="rt ${alt?"alt-"+MODE_LOOK[c]:""}" data-b="${b}" style="--c:${C.color}"><div class="face"><img src="${PORTRAITS[C.img]}" alt=""><div class="tn">${esc(nm(c))}</div></div>${role?`<div class="adc-badge">${role}</div>`:""}${MODES[b]?`<div class="mt" data-mt="${b}" title="Switch mode: ${esc(CHARS[MODES[b]].name)} / ${esc(CHARS[b].name)}">⇄</div>`:""}</div>`;}
 function layoutRing(){const el=RS.el;if(!el)return;RS.still=performance.now()+550;const R=UI9.ring,ord=ringOrder(),N=ord.length;
   el.querySelectorAll(".rt").forEach(t=>{const i=ord.indexOf(t.dataset.b);let d=((i-RS.rot)%N+N)%N;if(d>N/2)d-=N;const th=d/N*Math.PI*2;
     const x=R.cx+R.rx*Math.sin(th),y=R.cy+R.ry*Math.cos(th),depth=(Math.cos(th)+1)/2,s=(R.minScale+(R.maxScale-R.minScale)*depth);
@@ -4847,10 +4848,10 @@ renderSelect=function(){const el=$("#select");const st=SEL.step;
   const init=st===1?(SEL.player||"you"):(SEL.rival||ringOrder().map(eff).find(c=>c!=="you"&&c!==SEL.player)||"kaito");
   ringMount(el,{title:st===1?"CHOOSE YOUR DUELIST":"CHOOSE YOUR RIVAL",sub:st===1?"Rotate the circle and pick your duelist.":"Who will you face? Pick a rival or let fate decide.",
     initial:init,random:st===2,btnClass:st===1?"gold":"red",extraHTML:"",
-    isDim:c=>st===2&&c===SEL.player,
+    isDim:c=>(st===2&&c===SEL.player)||(st===1&&window.adcLockRole&&!!adcLockRole(c)),
     onChange:c=>{if(st===1)SEL.player=c;else SEL.rival=(c===SEL.player?null:c);},
-    confirmLabel:c=>st===1?{ok:!!c,text:"Next: Choose Rival ▶"}:(c===SEL.player?{ok:false,text:"Already your duelist"}:{ok:!!c,text:"⚔ DUEL!"}),
-    onConfirm:c=>{if(st===1){SEL.player=c;SEL.step=2;SEL.rival=null;renderSelect();}else{let r=c;if(r==="random")r=pick(CHAR_ORDER.filter(x=>x!==SEL.player));(window.showFieldSelect?showFieldSelect(SEL.player,r,c):showVersus(SEL.player,r,SEL.arena));}},
+    confirmLabel:c=>st===1?(window.adcLockRole&&adcLockRole(c)?{ok:false,text:"🔒 "+adcLockRole(c)}:{ok:!!c,text:"Next: Choose Rival ▶"}):(c===SEL.player?{ok:false,text:"Already your duelist"}:{ok:!!c,text:"⚔ DUEL!"}),
+    onConfirm:c=>{if(st===1&&window.adcPlayerLocked&&adcPlayerLocked(c)){try{toast(adcLockRole(c)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}if(st===1){SEL.player=c;SEL.step=2;SEL.rival=null;renderSelect();}else{let r=c;if(r==="random")r=pick(CHAR_ORDER.filter(x=>x!==SEL.player));(window.showFieldSelect?showFieldSelect(SEL.player,r,c):showVersus(SEL.player,r,SEL.arena));}},
     onBack:()=>{if(st===2){SEL.step=1;renderSelect();}else selectExit();},
     afterDetail:()=>bindName()});
 };
@@ -4980,7 +4981,8 @@ function sideHTML(side,c,locked,emptyText){const tag=side==="p1"?"P1":"P2";
   return `<div class="fside ${side}" style="--c:${p.color}"><div class="frender">${img}<div class="mfx"></div></div><div class="ftag">${tag}</div>
     ${locked?`<div class="lockd">${locked===true?"LOCKED":locked}</div>`:""}<div class="fpanel"><h3${p.h3.length>18?` style="font-size:${p.h3.length>23?17:p.h3.length>20?19:22}px"`:""}>${esc(p.h3)}</h3>${p.theme}${p.ace}${p.skill}</div></div>`;}
 function tileHTML(b,st){const c=eff(b),C=CHARS[c];const alt=c!==b;
-  return `<div class="ft ${alt?"alt-"+MODE_LOOK[c]:""}" data-b="${b}" style="--c:${C.color}"><div class="face"><img src="${PORTRAITS[C.img]}" alt=""><div class="tn">${esc(nm(c))}</div></div>${MODES[b]?`<div class="mt" data-mt="${b}" title="Switch mode: ${esc(CHARS[MODES[b]].name)} / ${esc(CHARS[b].name)}">⇄</div>`:""}</div>`;}
+  const role=window.adcLockRole?adcLockRole(c):"";const blocked=(!!FS.ctx||st===1)&&!!role;
+  return `<div class="ft ${alt?"alt-"+MODE_LOOK[c]:""}${blocked?" adc-lock":""}" data-b="${b}" style="--c:${C.color}"><div class="face"><img src="${PORTRAITS[C.img]}" alt=""><div class="tn">${esc(nm(c))}</div></div>${role?`<div class="adc-badge">${blocked?"🔒 ":""}${role}</div>`:""}${MODES[b]?`<div class="mt" data-mt="${b}" title="Switch mode: ${esc(CHARS[MODES[b]].name)} / ${esc(CHARS[b].name)}">⇄</div>`:""}</div>`;}
 function centerHTML(c,st){if(!c)return "";const p=parts(c);
   return `<div class="who">${esc(p.h3)}</div>${p.bio}${p.quote}${c==="you"&&st===1&&!FS.ctx?`<div><input id="pname" maxlength="16" placeholder="Enter your duelist name" value="${(store().name||"").replace(/"/g,"&quot;")}"></div>`:""}`;}
 
@@ -4998,10 +5000,11 @@ function paint(show,animate){const el=FS.el;if(!el)return;const X=FS.ctx;const s
   const cc=el.querySelector(".fcenter");if(cc){cc.innerHTML=centerHTML(live,st);bindName();}
   el.querySelectorAll(".ft").forEach(t=>{const b=t.dataset.b;const on=!FS.random&&FS.cur===b;t.classList.toggle("cur",on);
     let tg=t.querySelector(".ctag");if(on&&!tg){tg=document.createElement("div");tg.className="ctag";tg.textContent=st===1?"P1":"P2";t.appendChild(tg);}if(!on&&tg)tg.remove();
-    t.classList.toggle("dim",st===2&&eff(b)===SEL.player);});
+    t.classList.toggle("dim",(st===2&&eff(b)===SEL.player)||((!!X||st===1)&&window.adcLockRole&&!!adcLockRole(eff(b))));
+    t.classList.toggle("adc-lock",(!!X||st===1)&&window.adcLockRole&&!!adcLockRole(eff(b)));});
   const rt=el.querySelector(".ft.rnd");if(rt){rt.classList.toggle("cur",FS.random);let tg=rt.querySelector(".ctag");if(FS.random&&!tg){tg=document.createElement("div");tg.className="ctag";tg.textContent="P2";rt.appendChild(tg);}if(!FS.random&&tg)tg.remove();}
   const c=pickNow();
-  if(X)return;if(st===1)SEL.player=c;else SEL.rival=(c===SEL.player?null:c);}
+  if(X)return;if(st===1){if(!(window.adcPlayerLocked&&adcPlayerLocked(c)))SEL.player=c;}else SEL.rival=(c===SEL.player?null:c);}
 /* lobby: the P2 side mirrors the opponent's current pick (synced through the room) */
 function paintP2(){const el=FS.el,X=FS.ctx;if(!el||!X)return;const o=X.p2?X.p2():null;const c=o&&o.ch&&CHARS[o.ch]?o.ch:null;
   const old=el.querySelector(".fside.p2");const key=(c||"")+"|"+(o&&o.ready?1:0)+"|"+(o?1:0);if(old&&old.dataset.k===key)return;
@@ -5023,6 +5026,8 @@ function bindTile(t){const b=t.dataset.b;
 function confirmPick(rand){const el=FS.el;if(!el||FS.busy)return false;const X=FS.ctx;const st=X?1:SEL.step;if(rand){FS.random=true;paint(undefined,true);}
   const c=pickNow();if(!c)return false;
   if(X&&c==="random")return false;
+  if((X||st===1)&&window.adcPlayerLocked&&adcPlayerLocked(c)){const t=el.querySelector(`.ft[data-b="${baseOf(c)}"] .face`);if(t)anim(t,[{transform:"skewX(-6deg) translateX(-6px)"},{transform:"skewX(-6deg) translateX(6px)"},{transform:"skewX(-6deg)"}],220);
+    try{AUDIO.play("alert");}catch(e){}try{toast(adcLockRole(c)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return false;}
   if(!X&&st===2&&c===SEL.player){const t=el.querySelector(`.ft[data-b="${baseOf(c)}"] .face`);if(t)anim(t,[{transform:"skewX(-6deg) translateX(-6px)"},{transform:"skewX(-6deg) translateX(6px)"},{transform:"skewX(-6deg)"}],220);
     try{AUDIO.play("alert");}catch(e){}return false;}
   FS.busy=true;const t=c==="random"?el.querySelector("#sel-rand"):el.querySelector(`.ft[data-b="${baseOf(c)}"]`);if(t)t.classList.add("picked");
@@ -6015,7 +6020,8 @@ function renderTagSelect(){const s=mkScreen("tagsel");const on=SEAT.online;
    <div class="tmid">${on?`<div class="troom" id="troom">${on.roomHTML||""}</div>`:""}
     <div class="torder"><span class="lab">TURN ORDER</span>${order}</div><div style="font-size:10.5px;opacity:.7">Each team shares one field · own deck, hand, LP and Link</div>
     <div class="tgrid">${CHAR_ORDER.filter(c=>!TMBASE[c]).map(b=>{const cs=SEAT.chars[SEAT.cur];const c=tDual(b)&&tBase(cs)===b?cs:b;const C=CHARS[c];const ti=[];SEAT.chars.forEach((x,i)=>{if(tBase(x)===b)ti.push(i);});const tg=ti.map(i=>`<span class="tt" style="--c:${CHARS[SEAT.chars[i]].color};${i%2?"right:2px":"left:2px"}">${["A1","B1","A2","B2"][i]}</span>`).join("");
-      return `<div class="tile ${ti.length?"has":""} ${TMBASE[c]?"alt":""}" data-ch="${c}" style="--c:${C.color}" title="${esc(C.name)}"><img src="${PORTRAITS[C.img]}" alt="">${tg}${tDual(b)?`<span class="mtb ${TMBASE[c]?"on":""}" data-tile-mt="${c}" title="Pick the other form">⇄</span>`:""}<div class="tn">${esc(c==="you"?"You":C.name)}</div></div>`;}).join("")}</div></div>
+      const role=window.adcLockRole?adcLockRole(c):"";const blocked=!!(SEAT.human&&SEAT.human[SEAT.cur])&&!!role;
+      return `<div class="tile ${ti.length?"has":""} ${TMBASE[c]?"alt":""}${blocked?" adc-lock":""}" data-ch="${c}" style="--c:${C.color}" title="${esc(C.name)}"><img src="${PORTRAITS[C.img]}" alt="">${role?`<div class="adc-badge">${blocked?"🔒 ":""}${role}</div>`:""}${tg}${tDual(b)?`<span class="mtb ${TMBASE[c]?"on":""}" data-tile-mt="${c}" title="Pick the other form">⇄</span>`:""}<div class="tn">${esc(c==="you"?"You":C.name)}</div></div>`;}).join("")}</div></div>
    <div class="tsbtns"><button class="btn" id="ts-back">◀ Back</button><button class="btn" id="ts-rnd">🎲 Random</button><span class="vsx">VS</span><button class="btn" id="ts-swap">⇄ Swap teams</button><button class="btn red" id="ts-go" ${on&&!on.isHost?"disabled":""}>${on&&!on.isHost?"WAITING FOR HOST":"START DUEL ▶"}</button></div>
    <div class="tsfoot">${on?"Host only: Human ⇄ AI toggles and Start. Guests pick a duelist on their own seat. AI fills any empty seat.":"VS AI: you (A1) + an AI partner (A2) vs two AI rivals (B1, B2). Turn order A1 › B1 › A2 › B2."}</div>`;
   s.onclick=onSelClick;}
@@ -6024,14 +6030,14 @@ function onSelClick(e){const on=SEAT.online;
   const rm=e.target.closest("[data-troom]");if(rm){if(on&&on.onRoom)on.onRoom(rm.dataset.troom,rm,e);return;} /* v13: online room controls */
   if(e.target.closest("input,select,textarea"))return;
   const tg=e.target.closest("[data-tog]");if(tg){const i=+tg.dataset.tog;if(on&&on.isHost&&i!==on.mySeat){SEAT.human[i]=!SEAT.human[i];if(on.onChange)on.onChange("human",i);renderTagSelect();}else flash(tg);return;}
-  const smt=e.target.closest("[data-tag-mt]");if(smt){e.stopPropagation();const i=+smt.dataset.tagMt;if(!canPick(i)){flash(smt);return;}SEAT.chars[i]=tFlip(SEAT.chars[i]);try{snd("click");}catch(_){}if(on&&on.onChange)on.onChange("char",i);renderTagSelect();return;}
-  const tmt=e.target.closest("[data-tile-mt]");if(tmt){e.stopPropagation();const i=SEAT.cur;if(!canPick(i)){flash(tmt);return;}SEAT.chars[i]=tFlip(tmt.dataset.tileMt);try{snd("click");}catch(_){}if(on&&on.onChange)on.onChange("char",i);renderTagSelect();return;}
+  const smt=e.target.closest("[data-tag-mt]");if(smt){e.stopPropagation();const i=+smt.dataset.tagMt;if(!canPick(i)){flash(smt);return;}const nxt=tFlip(SEAT.chars[i]);if(SEAT.human[i]&&window.adcPlayerLocked&&adcPlayerLocked(nxt)){flash(smt);try{toast(adcLockRole(nxt)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}SEAT.chars[i]=nxt;try{snd("click");}catch(_){}if(on&&on.onChange)on.onChange("char",i);renderTagSelect();return;}
+  const tmt=e.target.closest("[data-tile-mt]");if(tmt){e.stopPropagation();const i=SEAT.cur;if(!canPick(i)){flash(tmt);return;}const nxt=tFlip(tmt.dataset.tileMt);if(SEAT.human[i]&&window.adcPlayerLocked&&adcPlayerLocked(nxt)){flash(tmt);try{toast(adcLockRole(nxt)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}SEAT.chars[i]=nxt;try{snd("click");}catch(_){}if(on&&on.onChange)on.onChange("char",i);renderTagSelect();return;}
   const sc=e.target.closest("[data-seat]");const tile=e.target.closest("[data-ch]");
-  if(tile){const i=SEAT.cur;if(!canPick(i)){flash(tile);return;}SEAT.chars[i]=tile.dataset.ch;snd("click");if(on&&on.onChange)on.onChange("char",i);
+  if(tile){const i=SEAT.cur;if(!canPick(i)){flash(tile);return;}if(SEAT.human[i]&&window.adcPlayerLocked&&adcPlayerLocked(tile.dataset.ch)){flash(tile);try{toast(adcLockRole(tile.dataset.ch)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}SEAT.chars[i]=tile.dataset.ch;snd("click");if(on&&on.onChange)on.onChange("char",i);
     if(!on){const ord=[0,1,2,3];SEAT.cur=ord[(ord.indexOf(i)+1)%4];}renderTagSelect();return;}
   if(sc){const i=+sc.dataset.seat;if(canPick(i)){SEAT.cur=i;renderTagSelect();}else if(on&&on.onSeat&&on.onSeat(i)){}else flash(sc);return;}
   if(e.target.closest("#ts-back")){if(on&&on.onLeave)on.onLeave();openTagMode();return;}
-  if(e.target.closest("#ts-rnd")){const pool=CHAR_ORDER.filter(c=>c!=="you");for(let i=0;i<4;i++)if(canPick(i)&&(!on||i!==on.mySeat||true))SEAT.chars[i]=pool[Math.floor(Math.random()*pool.length)];if(on&&on.onChange)on.onChange("all");renderTagSelect();return;}
+  if(e.target.closest("#ts-rnd")){const pool=CHAR_ORDER.filter(c=>c!=="you");const poolP=pool.filter(c=>!(window.adcPlayerLocked&&adcPlayerLocked(c)));for(let i=0;i<4;i++)if(canPick(i)&&(!on||i!==on.mySeat||true)){const use=SEAT.human[i]?poolP:pool;SEAT.chars[i]=use[Math.floor(Math.random()*use.length)];}if(on&&on.onChange)on.onChange("all");renderTagSelect();return;}
   if(e.target.closest("#ts-swap")){if(on&&!on.isHost)return;const c=SEAT.chars;SEAT.chars=[c[1],c[0],c[3],c[2]];if(on){const h=SEAT.human;SEAT.human=[h[1],h[0],h[3],h[2]];if(on.onChange)on.onChange("swap");}renderTagSelect();return;}
   if(e.target.closest("#ts-go")){if(on){if(on.isHost&&on.onStart)on.onStart();return;}
     const host=$("#tagsel");window.__stage=stageMount(host,{p1:SEAT.chars[0],p2:SEAT.chars[1],initial:null,okText:"⚔ START TAG DUEL",
@@ -7297,7 +7303,7 @@ function netCopy(text,msg){const done=()=>netToast(msg);
   fallback();}
 function netDeckLabel(ch,mode){if(mode==="list")return "Test deck";if(mode==="custom")return ch==="you"?"Custom deck (Deck Builder)":"Custom deck";return ch==="you"?"Starter deck":"Default deck";}
 function netPickHTML(){const me=NET.me,op=NET.opp,host=NET.role==="host";const C=CHARS[me.ch]||CHARS.you;
-  const tiles=CHAR_ORDER.map(c=>`<div class="ntile ${me.ch===c?"sel":""} ${me.ready?"lock":""}" data-ch="${c}" title="${netEsc(CHARS[c].name)}"><img src="${PORTRAITS[CHARS[c].img]}" alt=""><span>${c==="you"?"Custom":netEsc(CHARS[c].name)}</span></div>`).join("");
+  const tiles=CHAR_ORDER.map(c=>{const role=window.adcLockRole?adcLockRole(c):"";return `<div class="ntile ${me.ch===c?"sel":""} ${me.ready?"lock":""}${role?" adc-lock":""}" data-ch="${c}" title="${netEsc(CHARS[c].name)}"><img src="${PORTRAITS[CHARS[c].img]}" alt="">${role?`<div class="adc-badge">🔒 ${role}</div>`:""}<span>${c==="you"?"Custom":netEsc(CHARS[c].name)}</span></div>`;}).join("");
   const hasCustom=!!savedDeck(me.ch);
   const arenaOpts=[["home","Home arena (either duelist, random)"],["random","Random arena"],...Object.keys(ARENAS).map(k=>[k,ARENAS[k].name])];
   const OC=op&&op.ch?CHARS[op.ch]:null;
@@ -7318,12 +7324,12 @@ function netPickHTML(){const me=NET.me,op=NET.opp,host=NET.role==="host";const C
       <p class="onsmall">The duel starts when both duelists are ready.${host?"":" The host's browser runs the rules."}</p></div></div></div>
     <div id="on-status" class="onstatus"></div>`;}
 function netBindPick(){const me=NET.me;
-  document.querySelectorAll("#online .ntile").forEach(t=>t.onclick=()=>{if(me.ready)return;me.ch=t.dataset.ch;if(me.deck==="custom"&&!savedDeck(me.ch))me.deck="default";if(me.deck==="list")me.deck="default";netRenderOnline();netPickChanged();});
+  document.querySelectorAll("#online .ntile").forEach(t=>t.onclick=()=>{if(me.ready)return;if(window.adcPlayerLocked&&adcPlayerLocked(t.dataset.ch)){try{toast(adcLockRole(t.dataset.ch)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}me.ch=t.dataset.ch;if(me.deck==="custom"&&!savedDeck(me.ch))me.deck="default";if(me.deck==="list")me.deck="default";netRenderOnline();netPickChanged();});
   const n=$("#np-name");if(n)n.oninput=()=>{me.name=n.value;clearTimeout(NET.nameT);NET.nameT=setTimeout(netPickChanged,300);};
   const d=$("#np-deck");if(d)d.onchange=()=>{me.deck=d.value;netPickChanged();};
   const a=$("#np-arena");if(a)a.onchange=()=>{NET.cfg.arena=a.value;netPickChanged();};
   const tt=$("#np-turn");if(tt)tt.onchange=()=>{NET.cfg.turn=+tt.value;netPickChanged();};
-  $("#np-ready").onclick=()=>{me.name=netName(me.name);me.ready=!me.ready;netRenderOnline();netPickChanged();};}
+  $("#np-ready").onclick=()=>{if(!me.ready&&window.adcPlayerLocked&&adcPlayerLocked(me.ch)){try{toast(adcLockRole(me.ch)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}me.name=netName(me.name);me.ready=!me.ready;netRenderOnline();netPickChanged();};}
 function netShowCredits(){$("#modalLayer").innerHTML=`<div class="modal-bg"><div class="modal" style="width:760px"><h2>Online play - credits &amp; licences</h2><div class="oncredits">${netEsc(NET_CREDITS)}</div><div class="btnrow"><button class="btn gold" id="cr-close">Close</button></div></div></div>`;
   $("#cr-close").onclick=()=>{$("#modalLayer").innerHTML="";};}
 const NET_CREDITS=`Online multiplayer uses PeerJS 1.5.5 (https://peerjs.com), bundled inside this file.
@@ -7558,8 +7564,9 @@ if(typeof vsHold==="function"){
     const close=()=>{ov.remove();};
     ringMount(ov,{title:"CHOOSE YOUR DUELIST",sub:"Rotate the circle and pick your duelist.",initial:me.ch||"you",btnClass:"gold",
       detail:c=>{const s=SEL.step;SEL.step=2;try{return detailHTML(c);}finally{SEL.step=s;}},
-      onChange:c=>{cur=c;},confirmLabel:c=>({ok:!!c&&c!=="random",text:"✔ Use this duelist"}),
-      onConfirm:c=>{close();if(me.ready)return;me.ch=c;if(me.deck==="custom"&&!savedDeck(me.ch))me.deck="default";if(me.deck==="list")me.deck="default";netRenderOnline();netPickChanged();},
+      isDim:c=>window.adcPlayerLocked&&adcPlayerLocked(c),
+      onChange:c=>{cur=c;},confirmLabel:c=>({ok:!!c&&c!=="random"&&!(window.adcPlayerLocked&&adcPlayerLocked(c)),text:(window.adcLockRole&&adcLockRole(c))?"🔒 "+adcLockRole(c):"✔ Use this duelist"}),
+      onConfirm:c=>{if(window.adcPlayerLocked&&adcPlayerLocked(c)){try{toast(adcLockRole(c)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}close();if(me.ready)return;me.ch=c;if(me.deck==="custom"&&!savedDeck(me.ch))me.deck="default";if(me.deck==="list")me.deck="default";netRenderOnline();netPickChanged();},
       onBack:()=>close()});
     const bk=ov.querySelector("#sel-back");if(bk)bk.textContent="◀ Cancel";}
   window.netOpenRing=netOpenRing;
@@ -7570,7 +7577,7 @@ if(typeof vsHold==="function"){
     const close=()=>{ov.remove();};
     fightMount(ov,{title:"CHOOSE YOUR DUELIST",sub:"Online duel · pick your duelist. Your opponent's pick shows on the right.",initial:me.ch||"you",okText:"✔ Use this duelist",
       p2:()=>NET.opp?{ch:NET.opp.ch,ready:NET.opp.ready}:null,
-      onConfirm:c=>{close();if(me.ready)return;me.ch=c;if(me.deck==="custom"&&!savedDeck(me.ch))me.deck="default";if(me.deck==="list")me.deck="default";netRenderOnline();netPickChanged();},
+      onConfirm:c=>{if(window.adcPlayerLocked&&adcPlayerLocked(c)){try{toast(adcLockRole(c)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}close();if(me.ready)return;me.ch=c;if(me.deck==="custom"&&!savedDeck(me.ch))me.deck="default";if(me.deck==="list")me.deck="default";netRenderOnline();netPickChanged();},
       onBack:()=>close()});}
   window.netOpenFight=netOpenFight;
   const netOpenPicker=()=>{if(window.SELECT_STYLE==="circle"||typeof fightMount!=="function")netOpenRing();else netOpenFight();};
@@ -8164,4 +8171,6 @@ window.__adcTag={create:(name,code)=>tnCreate(name||"Host",code||null),join:(cod
     seats:t?t.seats.map(s=>({key:s.key,team:s.team,name:s.name,char:s.char,lp:s.lp,human:!!s.human,out:!!s.out,hand:s.hand.length,handIds:s.hand.map(c=>c.id||null),deck:s.deck.length,link:s.lk?(s.lk.used|0):0})):null,
     fieldP:G&&G.sides?G.sides.player.monsters.map(c=>c?(c.id||"?"):null):null,fieldE:G&&G.sides?G.sides.enemy.monsters.map(c=>c?(c.hidden?"?":c.id):null):null,
     log:(G&&G.log||[]).slice(0,12).map(e=>e.msg),notices:TN.notices.slice(),lastOver:TN.lastOver,stats:JSON.parse(JSON.stringify(TN.stats)),pend:TN.pend.size,hp:TN.hp.size,result:!!document.querySelector(".tagres")};}};
-</script></body></html>
+</script>
+<script src="assets/js/story-mode.js"></script>
+</body></html>
