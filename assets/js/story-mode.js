@@ -221,8 +221,9 @@ css.textContent=`
 .zzz-tile .mt{position:absolute;right:0;bottom:0;z-index:6;width:24px;height:24px;border-radius:50%;border:2px solid #ffd36b;background:#1b1238;color:#ffd36b;font-size:13px;line-height:20px;text-align:center;cursor:pointer}
 .zzz-tile .mt:hover{background:#ffd36b;color:#1b1238}
 .arc-card{font:inherit;color:#fff}
-.zzz-ok{position:absolute;right:28px;bottom:18px;z-index:6;min-width:210px;font-family:Impact,"Arial Black",sans-serif;letter-spacing:2px;font-size:18px}
-.zzz-hint{position:absolute;left:560px;right:250px;bottom:24px;font-size:11px;opacity:.55;pointer-events:none}
+.zzz > .backbtn{z-index:8;min-width:108px}
+.zzz-ok{position:absolute;right:28px;bottom:18px;z-index:8;min-width:220px;font-family:Impact,"Arial Black",sans-serif;letter-spacing:2px;font-size:18px}
+.zzz-hint{position:absolute;left:560px;right:260px;bottom:24px;font-size:11px;opacity:.55;pointer-events:none;z-index:8}
 `;
 document.head.appendChild(css);
 
@@ -487,13 +488,18 @@ function syncSelect(host){
 function renderSelect(host){
   const bases=rosterBases();
   if(!SS.cur||bases.indexOf(SS.cur)<0)SS.cur=bases.indexOf("clement")>=0?"clement":(bases[0]||"");
-  host.innerHTML=`<div class="zzz"><button class="btn backbtn" id="st-back" type="button">◀ Arcs</button>
+  host.innerHTML=`<div class="zzz">
     <div class="zzz-prev" id="zzz-prev"></div>
-    <div class="zzz-side"><h2>SELECT DUELIST</h2><div class="sub">Battle World follows whoever you choose. Rivals and villains stay on the other side of the gate.</div>
+    <div class="zzz-side"><h2>SELECT DUELIST</h2><div class="sub">Preview a duelist, then Start. The prologue and practice duel begin only after Start.</div>
       <div class="zzz-grid">${bases.map(tileHTML).join("")}</div></div>
-    <div class="zzz-hint">Tap a portrait · ⇄ switches form · Enter confirms</div>
-    <button class="btn gold zzz-ok" id="zzz-ok" type="button">CONFIRM</button></div>`;
-  host.querySelector("#st-back").onclick=()=>{view.page="arcs";renderStory();};
+    <div class="zzz-hint">Tap a portrait to preview · ⇄ switches form · Start begins the prologue</div>
+    <button class="btn backbtn" id="st-back" type="button">◀ Back</button>
+    <button class="btn gold zzz-ok" id="zzz-ok" type="button">START</button></div>`;
+  host.querySelector("#st-back").onclick=()=>{
+    /* Unconfirmed highlight is not saved. Flags and the arc banner stay as they are. */
+    view={page:"arcs",arc:view.arc||"bw",lines:null,onDone:null};
+    renderStory();
+  };
   host.querySelectorAll(".zzz-tile").forEach(t=>bindTile(t,host));
   host.querySelector("#zzz-ok").onclick=()=>confirmCast();
   paintPreview(host);
@@ -516,7 +522,12 @@ function paintPreview(host){
   if(sw)sw.addEventListener("mousedown",e=>e.preventDefault());
   if(sw)sw.onclick=()=>toggleStoryMode(host,SS.cur);
   const ok=host.querySelector("#zzz-ok");
-  if(ok)ok.textContent=locked?"LOCKED":"CONFIRM";
+  if(ok){
+    if(locked)ok.textContent="LOCKED";
+    else if(chapterCleared("tutorial")||chapterCleared("bw1"))ok.textContent="CHAPTERS";
+    else if(storyBag().story.tutorialWon)ok.textContent="CONTINUE";
+    else ok.textContent="START";
+  }
 }
 function confirmCast(){
   const id=shownOf(SS.cur);
