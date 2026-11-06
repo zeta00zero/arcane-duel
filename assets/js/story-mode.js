@@ -111,6 +111,11 @@ css.textContent=`
 #tagsel .tile.adc-lock img{filter:grayscale(1) brightness(.7)}
 #online .ntile.adc-lock{filter:grayscale(1) brightness(.62);cursor:not-allowed}
 #story,#gallery{background:radial-gradient(ellipse at 50% 0%,#2d2260 0%,#120c26 55%,#07050e 100%);overflow:hidden}
+#story.arc-bgd .vn{background:linear-gradient(180deg,rgba(8,6,16,.28),rgba(8,6,16,.55))}
+#story.arc-bgd .zzz{background:transparent}
+#story.arc-bgd .zzz::before{background:linear-gradient(90deg,rgba(7,8,14,.15),rgba(7,8,14,.55))}
+#story.arc-bgd .zzz-side{background:linear-gradient(200deg,rgba(10,12,18,.78),rgba(7,8,14,.88))}
+#story.arc-bgd .story-open{background:rgba(5,3,10,.45)}
 .st-wrap{position:absolute;inset:0;display:flex;flex-direction:column;padding:78px 36px 16px}
 .st-wrap h2{margin:0;font-family:Impact,"Arial Black",sans-serif;font-size:40px;letter-spacing:3px;color:#ffd36b;text-shadow:0 0 16px #ff9a3c88}
 .st-wrap .sub{opacity:.78;margin:4px 0 14px;font-size:14px}
@@ -200,8 +205,8 @@ css.textContent=`
   clip-path:polygon(42px 0,100% 0,100% 100%,0 100%)}
 .zzz-side h2{margin:0;font-family:Impact,"Arial Black",sans-serif;font-style:italic;font-size:32px;letter-spacing:2px;color:#fff;text-shadow:2px 2px 0 #8a6a12}
 .zzz-side .sub{font-size:12px;opacity:.75;margin:2px 0 10px}
-.zzz-grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(4,108px);grid-auto-rows:132px;gap:12px 8px;padding:6px 8px 12px 4px;-webkit-overflow-scrolling:touch}
-.zzz-tile{position:relative;border:0;padding:0;background:transparent;color:#fff;cursor:pointer}
+.zzz-grid{flex:1;min-height:0;overflow:auto;overflow-anchor:none;display:grid;grid-template-columns:repeat(4,108px);grid-auto-rows:132px;gap:12px 8px;padding:6px 8px 12px 4px;-webkit-overflow-scrolling:touch;scroll-behavior:auto}
+.zzz-tile{position:relative;overflow:hidden;border:0;padding:0;background:transparent;color:#fff;cursor:pointer;scroll-margin:0}
 .zzz-tile .face{position:absolute;inset:6px 4px 10px;overflow:hidden;background:#000;border:2px solid #ffffff2e;transform:skewX(-8deg);transition:border-color .12s,box-shadow .12s,transform .12s}
 .zzz-tile img{position:absolute;left:-10px;top:0;width:calc(100% + 20px);height:100%;object-fit:cover;object-position:50% 12%;transform:skewX(8deg);filter:saturate(.8) brightness(.78)}
 .zzz-tile .tn{position:absolute;left:0;right:0;bottom:0;padding:12px 3px 3px;text-align:center;font-weight:bold;font-size:10px;line-height:1.1;background:linear-gradient(transparent,#000e);transform:skewX(8deg)}
@@ -293,11 +298,23 @@ injectMenu();
 /* ---------- story ---------- */
 let view={page:"arcs",arc:"bw",lines:null,onDone:null};
 let vn={i:0,shown:0,full:"",timer:null};
+let arcBg="";
 const SS={cur:null};
 
-function openStory(){closeStoryVideo();view={page:"arcs",arc:"bw",lines:null,onDone:null};renderStory();showScreen("story");}
+function paintArcBackdrop(s){
+  if(!s)return;
+  if(arcBg){
+    s.classList.add("arc-bgd");
+    s.style.background="linear-gradient(180deg,rgba(6,4,12,.38),rgba(6,4,12,.72)),url(\""+arcBg+"\") center/cover no-repeat";
+  }else{
+    s.classList.remove("arc-bgd");
+    s.style.background="";
+  }
+}
+function openStory(){closeStoryVideo();arcBg="";view={page:"arcs",arc:"bw",lines:null,onDone:null};renderStory();showScreen("story");}
 function openArc(id){
   closeStoryVideo();
+  arcBg=ARC_ART[id]||"";
   if(id==="bw"){openCast();return;}
   view={page:"chapters",arc:id,lines:null,onDone:null};
   renderStory();
@@ -322,6 +339,7 @@ function arcMeta(a){
 }
 function renderStory(){
   const s=screen("story");
+  paintArcBackdrop(s);
   if(view.page==="vn"){renderVN(s);return;}
   if(view.page==="select"){renderSelect(s);return;}
   if(view.page==="opening"){renderOpening(s);return;}
@@ -366,49 +384,117 @@ function renderChapters(host){
 }
 
 /* ---------- ZZZ-style cast select ---------- */
+function tileHTML(b){
+  const id=shownOf(b);
+  const C=CHARS[id]||{};
+  const locked=adcPlayerLocked(id);
+  const role=adcLockRole(id);
+  const img=portOf(id);
+  const on=SS.cur===b?" on":"";
+  return `<button class="zzz-tile${on}${locked?" lock":""}" data-b="${esc(b)}" type="button" tabindex="-1" style="--c:${esc(C.color||"#ffd36b")}">
+    <span class="face">${img?`<img src="${img}" alt="">`:""}<span class="tn">${esc(charName(id))}</span></span>
+    ${role?`<span class="adc-badge">${locked?"🔒 ":""}${esc(role)}</span>`:""}
+    ${modeAlt(b)?`<span class="mt" data-mt="${esc(b)}" title="Switch form">⇄</span>`:""}
+    ${on&&!locked?`<span class="you">YOU</span>`:""}
+  </button>`;
+}
+function holdGrid(host){
+  const grid=host.querySelector(".zzz-grid");
+  const y=grid?grid.scrollTop:0;
+  const root=document.scrollingElement;
+  const wy=root?root.scrollTop:0;
+  return function restore(){
+    const g=host.querySelector(".zzz-grid");
+    if(g)g.scrollTop=y;
+    if(root)root.scrollTop=wy;
+  };
+}
+function bindTile(t,host){
+  const pin=()=>holdGrid(host);
+  t.addEventListener("pointerdown",e=>{
+    const restore=pin();
+    if(e.pointerType==="mouse")e.preventDefault();
+    t.addEventListener("focus",restore,{once:true});
+    requestAnimationFrame(restore);
+  });
+  t.onclick=e=>{
+    if(e.target.closest("[data-mt]"))return;
+    const restore=pin();
+    chooseBase(host,t.dataset.b);
+    restore();
+    requestAnimationFrame(restore);
+  };
+  const m=t.querySelector("[data-mt]");
+  if(m)m.addEventListener("click",e=>{
+    e.preventDefault();e.stopPropagation();
+    const restore=pin();
+    toggleStoryMode(host,m.dataset.mt);
+    restore();
+  });
+}
+function chooseBase(host,b){
+  const id=shownOf(b);
+  if(adcPlayerLocked(id)){lockToast(id);return;}
+  SS.cur=b;
+  syncSelect(host);
+}
+function toggleStoryMode(host,b){
+  if(!modeAlt(b))return;
+  storyModes[b]=!storyModes[b];
+  const id=shownOf(b);
+  if(!adcPlayerLocked(id))SS.cur=b;
+  try{AUDIO.play(storyModes[b]?"spell":"coin");}catch(err){}
+  syncSelect(host);
+}
+function syncTile(t){
+  const b=t.dataset.b;
+  const id=shownOf(b);
+  const C=CHARS[id]||{};
+  const locked=adcPlayerLocked(id);
+  const on=SS.cur===b;
+  t.classList.toggle("on",on);
+  t.classList.toggle("lock",locked);
+  t.style.setProperty("--c",C.color||"#ffd36b");
+  const face=t.querySelector(".face");
+  let img=t.querySelector("img");
+  const src=portOf(id);
+  if(src){
+    if(!img&&face){img=document.createElement("img");img.alt="";face.insertBefore(img,face.firstChild);}
+    if(img&&img.getAttribute("src")!==src)img.src=src;
+  }
+  const tn=t.querySelector(".tn");
+  if(tn)tn.textContent=charName(id);
+  let badge=t.querySelector(".adc-badge");
+  const role=adcLockRole(id);
+  if(role){
+    if(!badge){badge=document.createElement("span");badge.className="adc-badge";t.appendChild(badge);}
+    badge.textContent=(locked?"🔒 ":"")+role;
+  }else if(badge)badge.remove();
+  let you=t.querySelector(".you");
+  if(on&&!locked){
+    if(!you){you=document.createElement("span");you.className="you";you.textContent="YOU";t.appendChild(you);}
+  }else if(you)you.remove();
+}
+function syncSelect(host){
+  const grid=host.querySelector(".zzz-grid");
+  if(!grid){renderSelect(host);return;}
+  const y=grid.scrollTop;
+  grid.querySelectorAll(".zzz-tile").forEach(syncTile);
+  grid.scrollTop=y;
+  requestAnimationFrame(()=>{if(grid.isConnected)grid.scrollTop=y;});
+  paintPreview(host);
+}
 function renderSelect(host){
   const bases=rosterBases();
   if(!SS.cur||bases.indexOf(SS.cur)<0)SS.cur=bases.indexOf("clement")>=0?"clement":(bases[0]||"");
-  const tiles=bases.map(b=>{
-    const id=shownOf(b);
-    const C=CHARS[id]||{};
-    const locked=adcPlayerLocked(id);
-    const role=adcLockRole(id);
-    const img=portOf(id);
-    const on=SS.cur===b?" on":"";
-    return `<button class="zzz-tile${on}${locked?" lock":""}" data-b="${esc(b)}" type="button" style="--c:${esc(C.color||"#ffd36b")}">
-      <span class="face">${img?`<img src="${img}" alt="">`:""}<span class="tn">${esc(charName(id))}</span></span>
-      ${role?`<span class="adc-badge">${locked?"🔒 ":""}${esc(role)}</span>`:""}
-      ${modeAlt(b)?`<span class="mt" data-mt="${esc(b)}" title="Switch form">⇄</span>`:""}
-      ${on&&!locked?`<span class="you">YOU</span>`:""}
-    </button>`;
-  }).join("");
   host.innerHTML=`<div class="zzz"><button class="btn backbtn" id="st-back" type="button">◀ Arcs</button>
     <div class="zzz-prev" id="zzz-prev"></div>
     <div class="zzz-side"><h2>SELECT DUELIST</h2><div class="sub">Battle World follows whoever you choose. Rivals and villains stay on the other side of the gate.</div>
-      <div class="zzz-grid">${tiles}</div></div>
+      <div class="zzz-grid">${bases.map(tileHTML).join("")}</div></div>
     <div class="zzz-hint">Tap a portrait · ⇄ switches form · Enter confirms</div>
     <button class="btn gold zzz-ok" id="zzz-ok" type="button">CONFIRM</button></div>`;
   host.querySelector("#st-back").onclick=()=>{view.page="arcs";renderStory();};
-  host.querySelectorAll(".zzz-tile").forEach(t=>{
-    t.onclick=e=>{
-      if(e.target.closest("[data-mt]"))return;
-      const b=t.dataset.b;
-      const id=shownOf(b);
-      if(adcPlayerLocked(id)){lockToast(id);return;}
-      SS.cur=b;renderSelect(host);
-    };
-  });
-  host.querySelectorAll("[data-mt]").forEach(m=>m.onclick=e=>{
-    e.stopPropagation();
-    const b=m.dataset.mt;
-    if(!modeAlt(b))return;
-    storyModes[b]=!storyModes[b];
-    const id=shownOf(b);
-    if(!adcPlayerLocked(id))SS.cur=b;
-    try{AUDIO.play(storyModes[b]?"spell":"coin");}catch(err){}
-    renderSelect(host);
-  });
+  host.querySelectorAll(".zzz-tile").forEach(t=>bindTile(t,host));
   host.querySelector("#zzz-ok").onclick=()=>confirmCast();
   paintPreview(host);
 }
@@ -427,7 +513,8 @@ function paintPreview(host){
       <p class="flavor">${esc(locked?(role==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist."):(C.quote||C.theme||""))}</p>
       <p class="theme">${esc(C.theme||"")}</p>${swap}</div>`;
   const sw=box.querySelector("#zzz-swap");
-  if(sw)sw.onclick=()=>{storyModes[SS.cur]=!storyModes[SS.cur];if(!adcPlayerLocked(shownOf(SS.cur))){}renderSelect(host);};
+  if(sw)sw.addEventListener("mousedown",e=>e.preventDefault());
+  if(sw)sw.onclick=()=>toggleStoryMode(host,SS.cur);
   const ok=host.querySelector("#zzz-ok");
   if(ok)ok.textContent=locked?"LOCKED":"CONFIRM";
 }
@@ -721,10 +808,10 @@ document.addEventListener("keydown",e=>{
       if(!adcPlayerLocked(shownOf(bases[n])))break;
     }
     SS.cur=bases[n];
-    renderStory();
+    syncSelect(screen("story"));
     return;
   }
-  if(e.key==="m"||e.key==="M"){if(SS.cur&&modeAlt(SS.cur)){storyModes[SS.cur]=!storyModes[SS.cur];renderStory();}}
+  if(e.key==="m"||e.key==="M"){if(SS.cur&&modeAlt(SS.cur))toggleStoryMode(screen("story"),SS.cur);}
   else if(e.key==="Enter"){e.preventDefault();confirmCast();}
 });
 
