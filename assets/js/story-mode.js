@@ -1,4 +1,6 @@
-/* Story Mode, Gallery, and player-duelist locks.
+/* Story Mode, Gallery, and Story-only duelist locks.
+   PLAYER_LOCK applies only inside Story Mode. Duel, Tag, online, and the ring
+   do not see these locks (the helpers are not exported).
    Flags in localStorage["adc_v2"].story:
      protagonist   chosen Battle World duelist id (any playable form, including alts)
      tutorialWon   true after the prologue practice duel is won; opening not finished yet
@@ -24,8 +26,6 @@ const PLAYER_LOCK={
 };
 function adcLockRole(id){return PLAYER_LOCK[id]||"";}
 function adcPlayerLocked(id){return !!PLAYER_LOCK[id];}
-window.adcLockRole=adcLockRole;
-window.adcPlayerLocked=adcPlayerLocked;
 
 function storyBag(){
   const s=store();
@@ -854,11 +854,10 @@ if(typeof showScreen==="function"){
   };
 }
 
-/* ---------- hard stop: a locked id can never be the human duelist ---------- */
+/* Story practice duels still flag themselves. Other modes may pick any duelist. */
 if(typeof startDuel==="function"){
   const prev=startDuel;
   startDuel=function(p,e,opts){
-    if(adcPlayerLocked(p)){lockToast(p);return;}
     const r=prev.apply(this,arguments);
     if(opts&&opts.storyTutorial&&typeof G!=="undefined"&&G)G.storyTutorial=true;
     return r;
@@ -882,29 +881,6 @@ if(typeof showGameOver==="function"){
     showTutorialLoss();
   };
 }
-if(typeof startTag==="function"){
-  const prev=startTag;
-  startTag=function(cfg){
-    if(cfg&&cfg.chars&&cfg.human){
-      for(let i=0;i<cfg.chars.length;i++)if(cfg.human[i]&&adcPlayerLocked(cfg.chars[i])){lockToast(cfg.chars[i]);return;}
-    }
-    return prev.apply(this,arguments);
-  };
-}
-if(typeof netHostStartDuel==="function"){
-  const prev=netHostStartDuel;
-  netHostStartDuel=function(){
-    const H=NET.me,O=NET.opp;
-    if(H&&adcPlayerLocked(H.ch)||O&&adcPlayerLocked(O.ch)){
-      lockToast((H&&adcPlayerLocked(H.ch)?H.ch:O.ch));
-      if(H)H.ready=false;if(O)O.ready=false;
-      try{netRenderOnline();}catch(e){}
-      return;
-    }
-    return prev.apply(this,arguments);
-  };
-}
-
 /* Every <video> follows the Music slider (AUDIO.set.music) and Mute all.
    Sound-effect volume is not used. Ducking the music bed for a clip does not
    silence the video: the slider value itself is the video volume. */
