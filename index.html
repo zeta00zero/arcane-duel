@@ -7324,7 +7324,7 @@ function netPickHTML(){const me=NET.me,op=NET.opp,host=NET.role==="host";const C
       <p class="onsmall">The duel starts when both duelists are ready.${host?"":" The host's browser runs the rules."}</p></div></div></div>
     <div id="on-status" class="onstatus"></div>`;}
 function netBindPick(){const me=NET.me;
-  document.querySelectorAll("#online .ntile").forEach(t=>t.onclick=()=>{if(me.ready)return;if(window.adcPlayerLocked&&adcPlayerLocked(t.dataset.ch)){try{toast(adcLockRole(t.dataset.ch)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}me.ch=t.dataset.ch;if(me.deck==="custom"&&!savedDeck(me.ch))me.deck="default";if(me.deck==="list")me.deck="default";netRenderOnline();netPickChanged();});
+  document.querySelectorAll("#online .ntile").forEach(t=>t.onclick=()=>{if(me.ready)return;if(window.adcPlayerLocked&&adcPlayerLocked(t.dataset.ch)){try{toast(adcLockRole(t.dataset.ch)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}me.ch=t.dataset.ch;me.deckHeld=false;if(savedDeck(me.ch))me.deck="custom";else me.deck="default";netRenderOnline();netPickChanged();});
   const n=$("#np-name");if(n)n.oninput=()=>{me.name=n.value;clearTimeout(NET.nameT);NET.nameT=setTimeout(netPickChanged,300);};
   const d=$("#np-deck");if(d)d.onchange=()=>{me.deck=d.value;netPickChanged();};
   const a=$("#np-arena");if(a)a.onchange=()=>{NET.cfg.arena=a.value;netPickChanged();};
@@ -7566,7 +7566,7 @@ if(typeof vsHold==="function"){
       detail:c=>{const s=SEL.step;SEL.step=2;try{return detailHTML(c);}finally{SEL.step=s;}},
       isDim:c=>window.adcPlayerLocked&&adcPlayerLocked(c),
       onChange:c=>{cur=c;},confirmLabel:c=>({ok:!!c&&c!=="random"&&!(window.adcPlayerLocked&&adcPlayerLocked(c)),text:(window.adcLockRole&&adcLockRole(c))?"🔒 "+adcLockRole(c):"✔ Use this duelist"}),
-      onConfirm:c=>{if(window.adcPlayerLocked&&adcPlayerLocked(c)){try{toast(adcLockRole(c)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}close();if(me.ready)return;me.ch=c;if(me.deck==="custom"&&!savedDeck(me.ch))me.deck="default";if(me.deck==="list")me.deck="default";netRenderOnline();netPickChanged();},
+      onConfirm:c=>{if(window.adcPlayerLocked&&adcPlayerLocked(c)){try{toast(adcLockRole(c)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}close();if(me.ready)return;me.ch=c;me.deckHeld=false;if(savedDeck(me.ch))me.deck="custom";else me.deck="default";netRenderOnline();netPickChanged();},
       onBack:()=>close()});
     const bk=ov.querySelector("#sel-back");if(bk)bk.textContent="◀ Cancel";}
   window.netOpenRing=netOpenRing;
@@ -7577,7 +7577,7 @@ if(typeof vsHold==="function"){
     const close=()=>{ov.remove();};
     fightMount(ov,{title:"CHOOSE YOUR DUELIST",sub:"Online duel · pick your duelist. Your opponent's pick shows on the right.",initial:me.ch||"you",okText:"✔ Use this duelist",
       p2:()=>NET.opp?{ch:NET.opp.ch,ready:NET.opp.ready}:null,
-      onConfirm:c=>{if(window.adcPlayerLocked&&adcPlayerLocked(c)){try{toast(adcLockRole(c)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}close();if(me.ready)return;me.ch=c;if(me.deck==="custom"&&!savedDeck(me.ch))me.deck="default";if(me.deck==="list")me.deck="default";netRenderOnline();netPickChanged();},
+      onConfirm:c=>{if(window.adcPlayerLocked&&adcPlayerLocked(c)){try{toast(adcLockRole(c)==="Villain"?"Villains can't be your duelist.":"Rivals can't be your duelist.");}catch(e){}return;}close();if(me.ready)return;me.ch=c;me.deckHeld=false;if(savedDeck(me.ch))me.deck="custom";else me.deck="default";netRenderOnline();netPickChanged();},
       onBack:()=>close()});}
   window.netOpenFight=netOpenFight;
   const netOpenPicker=()=>{if(window.SELECT_STYLE==="circle"||typeof fightMount!=="function")netOpenRing();else netOpenFight();};
@@ -7701,6 +7701,7 @@ function tnSnapFor(v){const t=G.tag,X=tnX(v);
     seats,P:fld(X.M("player")),E:fld(X.M("enemy")),gd:TN.rDisc&&TN.rDisc.seat===v?1:0,ps:G.passTurn};}
 /* ---------- transport ---------- */
 function tnSend(rec,o){const c=rec&&rec.conn;if(!c||!c.open)return false;try{c.send(o);return true;}catch(e){return false;}}
+function tnOwnList(ch){try{const d=savedDeck(ch);if(d)return d;}catch(e){}try{return defaultDeck(ch);}catch(e){return null;}}
 function tnGSend(o){const c=TN.hostConn;if(!c||!c.open)return false;try{c.send(o);TN.lastTx=Date.now();return true;}catch(e){return false;}}
 function tnRecs(){return [...TN.conns.values()].filter(r=>r.seat!=null&&r.conn&&r.conn.open);}
 function tnRecOf(seat){return tnRecs().find(r=>r.seat===seat)||null;}
@@ -7894,7 +7895,7 @@ function tnHostMsg(rec,m){if(!m||typeof m!=="object")return;
       tnSend(rec,{t:"welcome",seat:i,code:TN.code,name:nm});tnToast(nm+" joined as "+TN_KEYS[i]);tnLobbyChanged();return;}
     case "ping":return;
     case "bye":tnGuestGone(rec,"left");return;
-    case "pick":if(!TN.inDuel&&rec.seat!=null&&CHARS[m.ch]){TN.chars[rec.seat]=m.ch;tnLobbyChanged();}return;
+    case "pick":if(!TN.inDuel&&rec.seat!=null&&CHARS[m.ch]){TN.chars[rec.seat]=m.ch;if(m.list&&typeof m.list==="object")rec.list=m.list;tnLobbyChanged();}return;
     case "ready":if(!TN.inDuel&&rec.seat!=null){rec.ready=!!m.on;TN.slots[rec.seat].ready=!!m.on;tnLobbyChanged();}return;
     case "seat":{const i=m.i|0;if(TN.inDuel||rec.seat==null||i<1||i>3||i===rec.seat)return;const s=TN.slots[i];if(s.kind!=="open"&&s.kind!=="ai")return;
       const old=rec.seat;TN.slots[i]=TN.slots[old];TN.slots[old]={kind:"ai"};const ch=TN.chars[old];TN.chars[old]=TN.chars[i];TN.chars[i]=ch;rec.seat=i;tnSend(rec,{t:"welcome",seat:i,code:TN.code,name:rec.name});tnLobbyChanged();return;}
@@ -7926,7 +7927,7 @@ function tnOpenLobby(){const S0=window.TAGSEAT;if(!S0)return;S0.chars=TN.chars.s
     onSeat:i=>{if(TN.role!=="guest")return false;const s=TN.slots[i];if(s&&(s.kind==="open"||s.kind==="ai")){tnGSend({t:"seat",i});return true;}return false;}};
   window.openTagSelect({online:on});tnSyncSeatUI();}
 function tnSeatChange(kind,i){const S0=window.TAGSEAT;
-  if(TN.role==="guest"){const me=TN.mySeat;if(CHARS[S0.chars[me]]&&S0.chars[me]!==TN.chars[me]){TN.chars[me]=S0.chars[me];tnGSend({t:"pick",ch:TN.chars[me]});}tnSyncSeatUI();return;}
+  if(TN.role==="guest"){const me=TN.mySeat;if(CHARS[S0.chars[me]]&&S0.chars[me]!==TN.chars[me]){TN.chars[me]=S0.chars[me];tnGSend({t:"pick",ch:TN.chars[me],list:tnOwnList(TN.chars[me])});}tnSyncSeatUI();return;}
   if(kind==="human"){const s=TN.slots[i];if(s.kind==="guest"){tnToast(s.name+" sits there - they can move with Sit here");}
     else if(s.kind==="ai")TN.slots[i]={kind:"open"};else if(s.kind==="open")TN.slots[i]={kind:"ai"};}
   else if(kind==="swap"){/* online: rotate the non-host seats A2 -> B1 -> B2 -> A2 (the host keeps A1) */
@@ -7950,7 +7951,8 @@ function tnHostStart(arena){if(TN.role!=="host"||TN.inDuel)return false;
   for(const r of tnRecs()){r.lastSnap=null;r.inDuel=false;tnSend(r,{t:"start",n:TN.duelNo,seat:r.seat,chars,names,human:human.map((h,i)=>i===0?true:h),arena:ar,host:TN.name});}
   tnLobbyChanged();
   if(TN.speed!=null)try{SPEED=TN.speed;}catch(e){}
-  startTag({chars,human,names:names.map(n=>n||null),net:true,view:0,arena:ar,speed:TN.speed!=null?TN.speed:undefined});
+  const decks=chars.map((ch,i)=>{const slot=TN.slots[i];if(slot&&slot.kind==="guest"){const r=tnRecs().find(x=>x.seat===i);if(r&&r.list&&validDeck(ch,r.list))return r.list;return defaultDeck(ch);}return null;});
+  startTag({chars,human,names:names.map(n=>n||null),net:true,view:0,arena:ar,decks:decks,speed:TN.speed!=null?TN.speed:undefined});
   tnDuelChrome(true);return true;}
 
 /* ================= GUEST ================= */
@@ -8155,7 +8157,7 @@ window.tagOnlineOpen=function(){const s=tnScreen();const st=netSettings();const 
 `;document.head.appendChild(c);})();
 /* ---------- test API ---------- */
 window.__adcTag={create:(name,code)=>tnCreate(name||"Host",code||null),join:(code,name)=>tnJoin(code,name||"Guest"),
-  pick:ch=>{if(!CHARS[ch]||!TN.slots)return false;TN.chars[TN.mySeat]=ch;if(TN.role==="guest")tnGSend({t:"pick",ch});else tnLobbyChanged();tnSyncSeatUI();return true;},
+  pick:ch=>{if(!CHARS[ch]||!TN.slots)return false;TN.chars[TN.mySeat]=ch;if(TN.role==="guest")tnGSend({t:"pick",ch,list:tnOwnList(ch)});else tnLobbyChanged();tnSyncSeatUI();return true;},
   pickFor:(i,ch)=>{if(TN.role!=="host"||!CHARS[ch]||TN.slots[i].kind==="guest")return false;TN.chars[i]=ch;tnLobbyChanged();return true;},
   ready:on=>{if(TN.role!=="guest")return false;TN.ready=on!==false;tnGSend({t:"ready",on:TN.ready});return true;},
   seat:i=>{if(TN.role!=="guest")return false;tnGSend({t:"seat",i});return true;},

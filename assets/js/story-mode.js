@@ -12,7 +12,8 @@
    prologue (tap to start, skip allowed) or from Gallery after the prologue is cleared.
    Practice partner is Toma (Lily if the hero is Toma), with that duelist's normal deck and LP.
    Prologue VN uses assets/img/story/cafe_bg.webp and labels the circle Narrator.
-   Only You may edit a deck, and only shared spells and traps. Other duelists use their fixed decks.
+   A saved deck is the deck that duelist uses in every mode. The default list is only
+   the fallback when that duelist has nothing saved.
    Every <video> uses the Music slider (not sound effects). */
 "use strict";
 (function(){
@@ -126,6 +127,36 @@ function vnArt(line){
   if(line&&line.bg&&STORY_ART[line.bg])return STORY_ART[line.bg];
   return STORY_ART.cafe;
 }
+/* Decode each story image once. Later lines reuse the bitmap instead of
+   assigning a new background or <img> and forcing the browser to fetch again. */
+const vnReady=new Set();
+const vnPend={};
+function preloadUrl(url){
+  if(!url)return Promise.resolve("");
+  if(vnReady.has(url))return Promise.resolve(url);
+  if(vnPend[url])return vnPend[url];
+  vnPend[url]=new Promise(res=>{
+    const img=new Image();
+    const done=()=>{vnReady.add(url);res(url);};
+    img.onload=()=>{if(typeof img.decode==="function")img.decode().then(done,done);else done();};
+    img.onerror=()=>res("");
+    img.src=url;
+  });
+  return vnPend[url];
+}
+function preloadLines(lines){
+  const urls=[];
+  Object.keys(STORY_ART).forEach(k=>urls.push(STORY_ART[k]));
+  (lines||[]).forEach(line=>{
+    urls.push(vnArt(line));
+    const p=portOf(line.id);
+    if(p)urls.push(p);
+    if(line.cut&&STORY_ART[line.cut])urls.push(STORY_ART[line.cut]);
+    if(line.item&&STORY_ART[line.item])urls.push(STORY_ART[line.item]);
+  });
+  return Promise.all(urls.map(preloadUrl));
+}
+try{Object.keys(STORY_ART).forEach(k=>preloadUrl(STORY_ART[k]));}catch(e){}
 
 const css=document.createElement("style");
 css.id="adc-story-css";
@@ -142,7 +173,7 @@ css.textContent=`
 #tagsel .tile.adc-lock img{filter:grayscale(1) brightness(.7)}
 #online .ntile.adc-lock{filter:grayscale(1) brightness(.62);cursor:not-allowed}
 #story,#gallery{background:radial-gradient(ellipse at 50% 0%,#2d2260 0%,#120c26 55%,#07050e 100%);overflow:hidden}
-#story.arc-bgd .vn{background:linear-gradient(180deg,rgba(8,6,16,.28),rgba(8,6,16,.55))}
+#story.arc-bgd .vn{background:#0b0714}
 #story.arc-bgd .zzz{background:transparent}
 #story.arc-bgd .zzz::before{background:linear-gradient(90deg,rgba(7,8,14,.15),rgba(7,8,14,.55))}
 #story.arc-bgd .zzz-side{background:linear-gradient(200deg,rgba(10,12,18,.78),rgba(7,8,14,.88))}
@@ -176,9 +207,14 @@ css.textContent=`
 .ch-row.soon:hover{border-color:#ffffff22}
 .ch-row.soon.next{opacity:1;cursor:pointer;border-color:#ffd36baa;box-shadow:0 0 18px #ffb35a33}
 .ch-row.soon.next .tag{color:#1a1204;background:linear-gradient(180deg,#ffe08a,#c9842a)}
-.vn{position:absolute;inset:0;display:flex;background:radial-gradient(ellipse at 30% 40%,#2a1848 0%,#0b0714 70%)}
-.vn-hit{position:absolute;inset:0;cursor:pointer}
-.vn-port{position:absolute;left:36px;bottom:0;width:420px;height:760px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
+.vn{position:absolute;inset:0;display:flex;background:#0b0714}
+.vn-bg{position:absolute;inset:0;z-index:0;background:#0b0714 center/cover no-repeat;opacity:0;transition:opacity .38s ease;pointer-events:none;will-change:opacity}
+.vn-bg.on{opacity:1}
+.vn-shade{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(12,8,16,.22),rgba(8,6,14,.55))}
+.vn-hit{position:absolute;inset:0;z-index:3;cursor:pointer}
+.vn-port{position:absolute;left:36px;bottom:0;z-index:2;width:420px;height:760px;pointer-events:none}
+.vn-fig{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .32s ease}
+.vn-fig.on{opacity:1}
 .vn-port img{width:400px;height:640px;object-fit:cover;object-position:50% 8%;border-radius:18px 18px 0 0;border:3px solid var(--c,#ffd36b);
   box-shadow:0 0 40px var(--c,#ffd36b);background:#000}
 .vn-crest{width:280px;height:280px;margin-bottom:220px;border-radius:50%;border:3px solid #ffd36b88;display:flex;align-items:center;justify-content:center;
@@ -255,30 +291,15 @@ css.textContent=`
 .zzz > .backbtn{z-index:8;min-width:108px}
 .zzz-ok{position:absolute;right:28px;bottom:18px;z-index:8;min-width:220px;font-family:Impact,"Arial Black",sans-serif;letter-spacing:2px;font-size:18px}
 .zzz-hint{position:absolute;left:560px;right:260px;bottom:24px;font-size:11px;opacity:.55;pointer-events:none;z-index:8}
-#vn-extra{position:absolute;right:28px;top:86px;z-index:4;display:flex;flex-direction:column;gap:12px;align-items:flex-end;pointer-events:none;max-width:480px}
+#vn-extra{position:absolute;right:28px;top:86px;z-index:4;width:420px;height:280px;pointer-events:none}
+.vn-pop{position:absolute;right:0;top:0;opacity:0;transform:translateY(8px);transition:opacity .28s ease,transform .28s ease}
+.vn-pop.on{opacity:1;transform:none}
 .vn-item{width:210px;border-radius:14px;overflow:hidden;border:2px solid #ffd36b;background:rgba(16,10,24,.9);box-shadow:0 12px 32px #000c}
-.vn-item img{display:block;width:100%;height:148px;object-fit:cover}
+.vn-item img{display:block;width:100%;height:148px;object-fit:cover;background:#120818}
 .vn-item b{display:block;padding:6px 8px 8px;text-align:center;color:#ffe9a8;letter-spacing:1px;font-size:13px}
-.vn-cut{width:min(460px,42vw);border-radius:14px;overflow:hidden;border:2px solid #ffffff66;box-shadow:0 14px 36px #000c}
+.vn-cut{width:100%;border-radius:14px;overflow:hidden;border:2px solid #ffffff66;box-shadow:0 14px 36px #000c;background:#120818}
 .vn-cut img{display:block;width:100%;height:220px;object-fit:cover}
 .vn-cut span{display:block;padding:6px 10px;background:rgba(0,0,0,.72);font-size:13px;color:#fff}
-#youpick{position:absolute;inset:0;display:flex;flex-direction:column;padding:72px 28px 18px;box-sizing:border-box;color:#fff}
-#youpick h2{margin:0;font-family:Impact,"Arial Black",sans-serif;letter-spacing:2px;color:#ffd36b;font-size:34px}
-#youpick .sub{opacity:.8;margin:4px 0 10px;font-size:14px}
-.yp-fixed{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.yp-chip{font-size:12px;padding:4px 8px;border-radius:999px;background:#ffffff14;border:1px solid #ffd36b44}
-.yp-grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding-right:4px}
-.yp-card{display:flex;gap:10px;align-items:center;text-align:left;color:#fff;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.28));border:2px solid #ffffff22;border-radius:14px;padding:8px}
-.yp-card.on{border-color:#ffd36b}
-.yp-card img,.yp-card .ph{width:54px;height:74px;object-fit:cover;border-radius:8px;background:#000;flex:none}
-.yp-card .nm{font-weight:bold;font-size:14px}
-.yp-card .k{font-size:11px;letter-spacing:1px;color:#ffd36b;margin-top:2px}
-.yp-card .ctr{margin-left:auto;display:flex;align-items:center;gap:6px}
-.yp-card .ctr b{min-width:14px;text-align:center}
-.yp-foot{display:flex;align-items:center;gap:10px;margin-top:10px}
-.yp-foot .count{font-family:Impact,sans-serif;letter-spacing:1px;font-size:20px}
-.yp-foot .count.ok{color:#9dffb0}
-.yp-foot .count.bad{color:#ff9aa8}
 `;
 document.head.appendChild(css);
 
@@ -621,51 +642,105 @@ function openAfterWin(id){
   showScreen("story");
 }
 
+let vnVis={bg:"",bgSlot:0,who:"",whoSlot:0,cut:"",item:""};
+let vnToken=0;
+let vnLive=false;
+function cssUrl(u){return 'url("'+String(u).replace(/"/g,"%22")+'")';}
 function renderVN(host){
-  host.innerHTML=`<div class="vn vn-cafe"><button class="btn backbtn" id="st-back" type="button" style="z-index:3">◀ Back</button>
+  vnVis={bg:"",bgSlot:0,who:"",whoSlot:0,cut:"",item:""};
+  vnLive=false;
+  const token=++vnToken;
+  host.innerHTML=`<div class="vn"><div class="vn-bg" id="vn-bg0"></div><div class="vn-bg" id="vn-bg1"></div><div class="vn-shade"></div>
+    <button class="btn backbtn" id="st-back" type="button" style="z-index:6">◀ Back</button>
     <div class="vn-hit" id="vn-hit"></div>
-    <div class="vn-port" id="vn-port"></div>
-    <div id="vn-extra"></div>
+    <div class="vn-port" id="vn-port"><div class="vn-fig" id="vn-fig0"></div><div class="vn-fig" id="vn-fig1"></div></div>
+    <div id="vn-extra"><div class="vn-pop vn-cut" id="vn-cut"><img alt=""><span></span></div><div class="vn-pop vn-item" id="vn-item"><img alt=""><b></b></div></div>
     <div class="vn-box"><div class="vn-name" id="vn-name"></div><div class="vn-text" id="vn-text"></div><div class="vn-next" id="vn-next">Tap to continue ▸</div></div></div>`;
   host.querySelector("#st-back").onclick=e=>{
-    e.stopPropagation();clearInterval(vn.timer);
+    e.stopPropagation();clearInterval(vn.timer);vnToken++;
     if(view.vnSet==="bw1"){view={page:"chapters",arc:"bw",lines:null,onDone:null};renderStory();return;}
     view.page=storyBag().story.tutorialWon?"arcs":"select";renderStory();
   };
   host.querySelector("#vn-hit").onclick=vnAdvance;
-  showVNLine();
+  preloadLines(view.lines).then(()=>{if(token===vnToken)showVNLine();});
+}
+function paintBG(url){
+  if(!url||vnVis.bg===url)return;
+  const next=vnVis.bg?(vnVis.bgSlot?0:1):0;
+  const el=document.getElementById("vn-bg"+next);
+  const prev=document.getElementById("vn-bg"+vnVis.bgSlot);
+  if(!el)return;
+  const first=!vnVis.bg;
+  el.style.backgroundImage=cssUrl(url);
+  if(first){
+    el.style.transition="none";
+    el.classList.add("on");
+    requestAnimationFrame(()=>{el.style.transition="";});
+  }else{
+    el.classList.add("on");
+    if(prev&&prev!==el)prev.classList.remove("on");
+  }
+  vnVis.bgSlot=next;
+  vnVis.bg=url;
+}
+function speakerOf(line){
+  const npc=line.id==="npc";
+  const C=!npc&&typeof CHARS!=="undefined"&&CHARS[line.id];
+  const col=npc?"#9bb0d0":((C&&C.color)||"#ffd36b");
+  const name=line.name||(C&&C.name)||"???";
+  if(line.id==="narrator")return {key:"narrator",col,name,html:'<div class="vn-crest">NARRATOR</div>'};
+  if(npc)return {key:"npc|"+col,col,name,html:'<div class="vn-sil" style="--c:'+col+'"><span></span></div>'};
+  const img=portOf(line.id);
+  if(!img)return {key:"narrator",col,name,html:'<div class="vn-crest">NARRATOR</div>'};
+  return {key:line.id,col,name,html:'<img src="'+esc(img)+'" alt="">'};
+}
+function paintSpeaker(spec){
+  const port=document.getElementById("vn-port");
+  if(port)port.style.setProperty("--c",spec.col);
+  if(vnVis.who===spec.key)return;
+  const next=vnVis.who?(vnVis.whoSlot?0:1):0;
+  const el=document.getElementById("vn-fig"+next);
+  const prev=document.getElementById("vn-fig"+vnVis.whoSlot);
+  if(!el)return;
+  el.innerHTML=spec.html;
+  const first=!vnVis.who;
+  if(first){
+    el.style.transition="none";
+    el.classList.add("on");
+    requestAnimationFrame(()=>{el.style.transition="";});
+  }else{
+    el.classList.add("on");
+    if(prev&&prev!==el)prev.classList.remove("on");
+  }
+  vnVis.whoSlot=next;
+  vnVis.who=spec.key;
+}
+function paintPop(which,key,url,label){
+  const el=document.getElementById(which==="cut"?"vn-cut":"vn-item");
+  if(!el)return;
+  if(vnVis[which]===key)return;
+  vnVis[which]=key;
+  const img=el.querySelector("img");
+  const cap=el.querySelector(which==="cut"?"span":"b");
+  if(!key){el.classList.remove("on");return;}
+  if(img&&img.getAttribute("src")!==url)img.src=url;
+  if(cap)cap.textContent=label||"";
+  el.classList.add("on");
 }
 function showVNLine(){
   const lines=view.lines||[];
   const line=lines[vn.i];if(!line){finishLines();return;}
-  const npc=line.id==="npc";
-  const C=!npc&&typeof CHARS!=="undefined"&&CHARS[line.id];
-  const name=line.name||(C&&C.name)||"???";
-  const col=npc?"#9bb0d0":((C&&C.color)||"#ffd36b");
-  const port=document.getElementById("vn-port");
-  port.style.setProperty("--c",col);
-  if(line.id==="narrator")port.innerHTML=`<div class="vn-crest">NARRATOR</div>`;
-  else if(npc)port.innerHTML=`<div class="vn-sil" style="--c:${col}"><span></span></div>`;
-  else{
-    const img=portOf(line.id);
-    port.innerHTML=img?`<img src="${img}" alt="">`:`<div class="vn-crest">NARRATOR</div>`;
-  }
-  const root=document.querySelector("#story .vn");
-  const art=vnArt(line);
-  if(root&&art)root.style.background="linear-gradient(180deg,rgba(12,8,16,.25),rgba(8,6,14,.58)),url(\""+String(art).replace(/"/g,"%22")+"\") center/cover no-repeat";
-  const extra=document.getElementById("vn-extra");
-  if(extra){
-    const bits=[];
-    if(line.cut&&STORY_ART[line.cut])bits.push(`<div class="vn-cut"><img src="${STORY_ART[line.cut]}" alt=""><span>${esc(line.cutCap||"")}</span></div>`);
-    if(line.item&&STORY_ART[line.item])bits.push(`<div class="vn-item"><img src="${STORY_ART[line.item]}" alt=""><b>${esc(line.itemName||"")}</b></div>`);
-    extra.innerHTML=bits.join("");
-  }
+  const spec=speakerOf(line);
+  paintBG(vnArt(line));
+  paintSpeaker(spec);
+  paintPop("cut",line.cut&&STORY_ART[line.cut]?line.cut:"",line.cut?STORY_ART[line.cut]:"",line.cutCap||"");
+  paintPop("item",line.item&&STORY_ART[line.item]?line.item:"",line.item?STORY_ART[line.item]:"",line.itemName||"");
   const nm=document.getElementById("vn-name");
-  nm.textContent=name;nm.style.background=col;nm.style.color="#1a1008";
-  vn.full=line.text;vn.shown=0;
+  if(nm){nm.textContent=spec.name;nm.style.background=spec.col;nm.style.color="#1a1008";}
+  vn.full=line.text;vn.shown=0;vnLive=true;
   const tx=document.getElementById("vn-text");if(tx)tx.textContent="";
   const nxt=document.getElementById("vn-next");
-  if(nxt)nxt.textContent=line.end?"Tap to continue ▸":"Tap to continue ▸";
+  if(nxt)nxt.textContent="Tap to continue ▸";
   clearInterval(vn.timer);
   vn.timer=setInterval(()=>{
     vn.shown=Math.min(vn.full.length,vn.shown+1);
@@ -674,6 +749,7 @@ function showVNLine(){
   },16);
 }
 function vnAdvance(){
+  if(!vnLive)return;
   const lines=view.lines||[];
   if(vn.shown<vn.full.length){vn.shown=vn.full.length;clearInterval(vn.timer);const el=document.getElementById("vn-text");if(el)el.textContent=vn.full;return;}
   const line=lines[vn.i];
@@ -1087,204 +1163,130 @@ try{
 }catch(e){}
 tuneAllVideos();
 
-/* Monster stats are pulled into a shared level band so no duelist's ace
-   runs away with the match. Effects stay. Ink-copy tokens are left alone. */
+/* Monster ATK/DEF sit on a level curve, then a role adjusts that curve.
+   Effect monsters are the baseline. Vanilla bodies are a little higher.
+   Aces sit at the top of the level. Walls trade ATK for DEF. A direct-only
+   attacker trades both. Numbers already inside the band stay. Outliers move
+   to the nearest edge, so no duelist's set is a full tier above or below.
+   Aura, burn and heal numbers that exceed the level cap are pulled down.
+   Wei Yao's base form (not the alt) is then lifted above that curve. */
 function balanceMonsters(){
   if(typeof CARDS==="undefined"||window.__adcBalanced)return;
   window.__adcBalanced=1;
-  const band={1:[400,1100],2:[500,1100],3:[700,1650],4:[700,1800],5:[1600,2300],6:[2000,2500],7:[2200,2700],8:[2500,3000],9:[2800,3200],10:[3000,3300]};
-  const by={};
+  const curve={
+    1:{atk:700,def:700},2:{atk:900,def:900},3:{atk:1200,def:1100},4:{atk:1600,def:1400},
+    5:{atk:2000,def:1700},6:{atk:2300,def:1900},7:{atk:2550,def:2100},8:{atk:2850,def:2350},
+    9:{atk:3050,def:2600},10:{atk:3250,def:2800}
+  };
+  const roleMul={effect:{atk:1,def:1},vanilla:{atk:1.06,def:1},direct:{atk:0.9,def:0.84},wall:{atk:0.78,def:1.35},ace:{atk:1.05,def:1.06}};
+  const r50=n=>Math.max(0,Math.round(n/50)*50);
+  const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
+  function roleOf(c){
+    const fx=c.fx||{};
+    const keys=Object.keys(fx).filter(k=>fx[k]);
+    if(c.ace||c.extra||c.destiny||(c.level||0)>=9)return "ace";
+    if(fx.guard&&c.def>=c.atk)return "wall";
+    if(!keys.length)return "vanilla";
+    if(fx.direct&&keys.length===1)return "direct";
+    if(c.atk>0&&c.def>=c.atk*1.25&&c.def-c.atk>=400)return "wall";
+    return "effect";
+  }
+  function walkFx(fx,fn){
+    if(!fx)return;
+    if(Array.isArray(fx)){fx.forEach(x=>walkFx(x,fn));return;}
+    fn(fx);
+    ["onSummon","onDestroy","flip","aura","auraPer"].forEach(k=>{if(fx[k])walkFx(fx[k],fn);});
+  }
+  const before=[];
   for(const id in CARDS){
     const c=CARDS[id];
-    if(!c||c.type!=="monster"||c.token||c.extra||c.retired)continue;
-    (by[c.ch]||(by[c.ch]=[])).push(c);
-  }
-  const TARGET=2650;
-  for(const ch in by){
-    const top=by[ch].slice().sort((a,b)=>b.atk-a.atk).slice(0,3);
-    if(!top.length)continue;
-    const avg=top.reduce((s,c)=>s+c.atk,0)/top.length;
-    if(!avg)continue;
-    let scale=TARGET/avg;
-    if(scale<0.92)scale=0.92;
-    if(scale>1.10)scale=1.10;
-    if(Math.abs(scale-1)<0.04)continue;
-    by[ch].forEach(c=>{
-      c.atk=Math.max(0,Math.round(c.atk*scale/50)*50);
-      c.def=Math.max(0,Math.round(c.def*scale/50)*50);
+    if(!c||c.type!=="monster"||c.retired)continue;
+    if(c.token&&(!c.atk||id==="ue_inkcopy"))continue;
+    if(c.ch==="weiyao"){
+      c._wy={atk:c.atk,def:c.def};
+      before.push({id:id,name:c.name,level:c.level,atk:c.atk,def:c.def,fx:JSON.parse(JSON.stringify(c.fx||{}))});
+    }
+    const lv=c.level||1;
+    const base=curve[lv]||curve[10];
+    const mul=roleMul[roleOf(c)];
+    const tA=base.atk*mul.atk,tD=base.def*mul.def;
+    c.atk=clamp(r50(c.atk),r50(tA*0.94),r50(tA*1.06));
+    c.def=clamp(r50(c.def),r50(tD*0.90),r50(tD*1.08));
+    const auraMax=lv<=3?250:lv<=5?350:lv<=7?400:500;
+    const hitMax=lv<=3?500:lv<=5?700:lv<=7?1000:1200;
+    walkFx(c.fx,fx=>{
+      if(typeof fx.atk==="number"&&fx.atk>auraMax)fx.atk=auraMax;
+      if((fx.k==="burn"||fx.k==="heal")&&typeof fx.v==="number"&&fx.v>hitMax)fx.v=hitMax;
+      if(fx.k==="destroyMon"&&!fx.maxAtk&&c.level>=8)fx.maxAtk=2600;
     });
   }
   for(const id in CARDS){
     const c=CARDS[id];
-    if(!c||c.type!=="monster"||c.retired||id==="ue_inkcopy")continue;
-    const b=band[c.level]||[2800,3300];
-    if(typeof c.atk==="number"&&c.atk>b[1])c.atk=b[1];
-    if(typeof c.def==="number"){
-      const hi=Math.round(b[1]*1.08/50)*50;
-      if(c.def>hi)c.def=hi;
+    if(!c||c.ch!=="weiyao"||c.retired)continue;
+    if(c.type==="monster"){
+      const bump=c.level>=7?300:c.level>=5?250:200;
+      const orig=c._wy||{atk:c.atk,def:c.def};
+      c.atk=r50(Math.max(c.atk,orig.atk)+bump);
+      c.def=r50(Math.max(c.def,orig.def)+100);
+      delete c._wy;
+      walkFx(c.fx,fx=>{
+        if(typeof fx.atk==="number")fx.atk+=100;
+        if((fx.k==="heal"||fx.k==="burn")&&typeof fx.v==="number")fx.v+=200;
+      });
     }
   }
-  const titan=CARDS.b_titan;
-  if(titan&&titan.fx&&titan.fx.onSummon&&titan.fx.onSummon.k==="destroyMon"&&!titan.fx.onSummon.maxAtk){
-    titan.fx.onSummon=Object.assign({},titan.fx.onSummon,{maxAtk:2600});
-  }
-  if(CARDS.cl_destiny){
-    if(CARDS.cl_destiny.atk>3300)CARDS.cl_destiny.atk=3300;
-    if(CARDS.cl_destiny.def>3400)CARDS.cl_destiny.def=3400;
-  }
+  if(CARDS.w_glow&&CARDS.w_glow.fx&&typeof CARDS.w_glow.fx.atk==="number")CARDS.w_glow.fx.atk+=100;
+  if(CARDS.w_wall&&CARDS.w_wall.fx&&typeof CARDS.w_wall.fx.v==="number")CARDS.w_wall.fx.v+=200;
+  if(CARDS.w_spot&&CARDS.w_spot.fx&&typeof CARDS.w_spot.fx.v==="number")CARDS.w_spot.fx.v+=200;
+  window.adcWeiBefore=before;
 }
 balanceMonsters();
 
-/* Only You edits a deck, and only the shared spells and traps.
-   Monsters stay on the fixed starter list. Other duelists ignore saved decks. */
-function youMonsters(){
-  const d=defaultDeck("you"),o={};
-  for(const id in d)if(CARDS[id]&&CARDS[id].type==="monster")o[id]=d[id];
-  return o;
-}
-function sharedSpells(){
-  return Object.keys(CARDS).filter(id=>{
-    const c=CARDS[id];
-    if(!c||c.extra||c.retired||c.ch!=="shared")return false;
-    if(c.type!=="spell"&&c.type!=="trap")return false;
-    const k=c.fx&&c.fx.k;
-    if(k==="destroyAll"||k==="destroyWeakAll"||k==="destroyAllST")return false;
-    return true;
-  }).sort((a,b)=>CARDS[a].name.localeCompare(CARDS[b].name));
-}
-function youDeckOk(d){
-  if(!d)return false;
-  const m=youMonsters();
-  let n=0;
-  for(const id in m){if(d[id]!==m[id])return false;n+=m[id];}
-  const allow={};
-  sharedSpells().forEach(id=>allow[id]=1);
-  for(const id in d){
-    if(m[id])continue;
-    const c=CARDS[id];
-    if(!allow[id]||!c||d[id]<1||d[id]>3)return false;
-    n+=d[id];
-  }
-  return n>=30&&n<=40;
-}
-function youWorkingDeck(){
-  const o=Object.assign({},youMonsters());
-  const saved=store().decks&&store().decks.you;
-  const src=saved&&youDeckOk(saved)?saved:defaultDeck("you");
-  for(const id in src){
-    const c=CARDS[id];
-    if(c&&(c.type==="spell"||c.type==="trap"))o[id]=src[id];
-  }
-  return o;
+/* A saved deck belongs to that duelist in every mode. Default is only the
+   fallback when nothing valid is saved. The deck builder itself is unchanged. */
+function savedOrNull(ch){
+  try{return typeof savedDeck==="function"?savedDeck(ch):null;}catch(e){return null;}
 }
 if(typeof deckFor==="function"){
-  deckFor=function(ch){
-    if(ch==="you")return youWorkingDeck();
-    return defaultDeck(ch);
+  const prevDeck=deckFor;
+  deckFor=function(ch,side){
+    const d=savedOrNull(ch);
+    if(d)return d;
+    return prevDeck.call(this,ch,side);
   };
 }
-if(typeof savedDeck==="function"){
-  savedDeck=function(ch){
-    if(ch!=="you")return null;
-    const d=store().decks&&store().decks.you;
-    return d&&youDeckOk(d)?d:null;
+if(typeof netMyDeck==="function"){
+  netMyDeck=function(){
+    const me=NET.me;
+    if(me.deck==="list"&&me.list&&typeof validDeck==="function"&&validDeck(me.ch,me.list))return me.list;
+    if(me.deck==="default"&&me.deckHeld)return defaultDeck(me.ch);
+    const d=savedOrNull(me.ch);
+    if(d)return d;
+    return defaultDeck(me.ch);
   };
 }
-if(typeof detailHTML==="function"){
-  const prevDetail=detailHTML;
-  detailHTML=function(c){
-    let html=prevDetail.apply(this,arguments);
-    if(c==="you")html=html.replace("Deck: built by you in the Deck Builder from every card in the game","Deck: fixed monsters · you choose the shared spells and traps");
-    return html.replace(/ · custom deck ✔/g,"");
+if(typeof netPickHTML==="function"){
+  const prevPick=netPickHTML;
+  netPickHTML=function(){
+    const me=typeof NET!=="undefined"&&NET.me;
+    if(me&&!me.deckHeld&&savedOrNull(me.ch))me.deck="custom";
+    return prevPick.apply(this,arguments);
   };
 }
-function youSpellCount(){
-  let n=0;
-  for(const id in DB.deck){
-    const c=CARDS[id];
-    if(c&&(c.type==="spell"||c.type==="trap"))n+=DB.deck[id];
-  }
-  return n;
-}
-function renderYouSpells(){
-  const el=document.getElementById("builder");
-  if(!el)return;
-  const monsters=youMonsters();
-  let mcount=0;
-  const chips=Object.keys(monsters).map(id=>{
-    mcount+=monsters[id];
-    return `<span class="yp-chip">${esc(CARDS[id].name)} ×${monsters[id]}</span>`;
-  }).join("");
-  const spells=sharedSpells();
-  const sc=youSpellCount();
-  const total=mcount+sc;
-  const ok=total>=30&&total<=40;
-  const cards=spells.map(id=>{
-    const c=CARDS[id];
-    const n=DB.deck[id]||0;
-    const art=typeof artSrc==="function"?artSrc(id):"";
-    return `<div class="yp-card ${n?"on":""}"><img src="${art}" alt="" onerror="this.style.visibility='hidden'">
-      <div><div class="nm">${esc(c.name)}</div><div class="k">${esc(c.type==="trap"?"TRAP":(c.kind||"SPELL"))}</div></div>
-      <div class="ctr"><button class="btn" type="button" data-rm="${id}">−</button><b>${n}</b><button class="btn" type="button" data-add="${id}">+</button></div></div>`;
-  }).join("");
-  el.innerHTML=`<div id="youpick"><button class="btn backbtn" id="db-back" type="button">◀ Menu</button>
-    <h2>YOUR SPELLS &amp; TRAPS</h2>
-    <div class="sub">Monsters stay fixed (${mcount} cards). Choose shared spells and traps until the deck is 30–40. Max 3 copies.</div>
-    <div class="yp-fixed">${chips}</div>
-    <div class="yp-grid">${cards}</div>
-    <div class="yp-foot"><span class="count ${ok?"ok":"bad"}">${total} / 30–40</span>
-      <button class="btn green" id="db-save" type="button" ${ok?"":"disabled"}>Save</button>
-      <button class="btn" id="db-reset" type="button">Reset</button></div></div>`;
-  el.querySelector("#db-back").onclick=()=>showScreen("menu");
-  el.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{
-    const id=b.dataset.add;
-    if((DB.deck[id]||0)>=3){toast("Max 3 copies.");return;}
-    if(mcount+youSpellCount()>=40){toast("Deck is full (40).");return;}
-    DB.deck[id]=(DB.deck[id]||0)+1;
-    renderYouSpells();
-  });
-  el.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{
-    const id=b.dataset.rm;
-    if(!DB.deck[id])return;
-    DB.deck[id]--;
-    if(!DB.deck[id])delete DB.deck[id];
-    renderYouSpells();
-  });
-  const save=el.querySelector("#db-save");
-  if(save)save.onclick=()=>{
-    if(!youDeckOk(DB.deck)){toast("Deck must be 30–40 cards.");return;}
-    const st=store();
-    st.decks=st.decks||{};
-    const clean={};
-    const m=youMonsters();
-    for(const id in m)clean[id]=m[id];
-    sharedSpells().forEach(id=>{if(DB.deck[id])clean[id]=DB.deck[id];});
-    st.decks.you=clean;
-    if(st.decks){for(const k in st.decks)if(k!=="you")delete st.decks[k];}
-    saveStore(st);
-    toast("Spells and traps saved.");
-    renderYouSpells();
-  };
-  el.querySelector("#db-reset").onclick=()=>{
-    const st=store();
-    if(st.decks)delete st.decks.you;
-    saveStore(st);
-    DB.deck=youWorkingDeck();
-    toast("Back to the starter spells.");
-    renderYouSpells();
-  };
-}
-if(typeof openBuilder==="function"){
-  openBuilder=function(ch){
-    if(ch&&ch!=="you"){
-      try{toast("Only You can edit spells and traps. Other duelists keep a fixed deck.");}catch(e){}
-      return;
+if(typeof netBindPick==="function"){
+  const prevBind=netBindPick;
+  netBindPick=function(){
+    const r=prevBind.apply(this,arguments);
+    const d=document.querySelector("#np-deck");
+    if(d){
+      const old=d.onchange;
+      d.onchange=function(){
+        if(NET.me)NET.me.deckHeld=d.value==="default";
+        if(old)return old.apply(this,arguments);
+      };
     }
-    DB.ch="you";
-    DB.deck=youWorkingDeck();
-    showScreen("builder");
-    renderYouSpells();
+    return r;
   };
-  renderBuilder=function(){renderYouSpells();};
 }
+
 })();
