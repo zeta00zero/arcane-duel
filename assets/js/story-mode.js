@@ -223,9 +223,10 @@ css.textContent=`
 .vn-sil{width:260px;height:520px;margin-bottom:80px;border-radius:130px 130px 24px 24px;position:relative;
   background:linear-gradient(180deg,#232838,#0a0c12);border:3px solid var(--c,#9bb0d0);box-shadow:0 0 36px var(--c,#9bb0d0)}
 .vn-sil span{position:absolute;left:50%;top:72px;width:112px;height:112px;margin-left:-56px;border-radius:50%;background:#10131b;box-shadow:inset 0 0 0 10px #3a4458}
-.vn-box{position:absolute;left:28px;right:28px;bottom:22px;min-height:168px;border-radius:16px;border:2px solid #ffd36b99;
+.vn-box{position:absolute;left:28px;right:28px;bottom:22px;z-index:6;min-height:168px;border-radius:16px;border:2px solid #ffd36b99;
   background:linear-gradient(180deg,rgba(18,10,36,.92),rgba(8,6,16,.94));padding:16px 22px 14px;box-shadow:0 12px 40px #000c;pointer-events:none}
-.vn-name{display:inline-block;margin:-30px 0 8px;padding:4px 14px;border-radius:10px;background:var(--c,#ffd36b);color:#1a1008;
+.vn > .backbtn{z-index:7}
+.vn-name{position:relative;z-index:1;display:inline-block;margin:-30px 0 8px;padding:4px 14px;border-radius:10px;background:var(--c,#ffd36b);color:#1a1008;
   font-family:Impact,"Arial Black",sans-serif;letter-spacing:1px;font-size:20px}
 .vn-text{font-size:20px;line-height:1.45;min-height:84px}
 .vn-next{text-align:right;font-size:13px;letter-spacing:1px;color:#ffd36b;opacity:.85}
@@ -651,7 +652,7 @@ function renderVN(host){
   vnLive=false;
   const token=++vnToken;
   host.innerHTML=`<div class="vn"><div class="vn-bg" id="vn-bg0"></div><div class="vn-bg" id="vn-bg1"></div><div class="vn-shade"></div>
-    <button class="btn backbtn" id="st-back" type="button" style="z-index:6">◀ Back</button>
+    <button class="btn backbtn" id="st-back" type="button">◀ Back</button>
     <div class="vn-hit" id="vn-hit"></div>
     <div class="vn-port" id="vn-port"><div class="vn-fig" id="vn-fig0"></div><div class="vn-fig" id="vn-fig1"></div></div>
     <div id="vn-extra"><div class="vn-pop vn-cut" id="vn-cut"><img alt=""><span></span></div><div class="vn-pop vn-item" id="vn-item"><img alt=""><b></b></div></div>
@@ -1054,8 +1055,8 @@ if(typeof startDuel==="function"){
   startDuel=function(p,e,opts){
     const r=prev.apply(this,arguments);
     if(opts&&typeof G!=="undefined"&&G){
-      if(opts.storyTutorial)G.storyTutorial=true;
-      if(opts.storyChapter)G.storyChapter=opts.storyChapter;
+      if(opts.storyTutorial){G.storyTutorial=true;G.aiDiff="easy";}
+      if(opts.storyChapter){G.storyChapter=opts.storyChapter;if(!opts.storyTutorial)G.aiDiff="normal";}
     }
     return r;
   };
