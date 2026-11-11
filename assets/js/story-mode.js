@@ -5,13 +5,14 @@
      protagonist   chosen Battle World duelist id (any playable form, including alts)
      tutorialWon   true after the prologue practice duel is won; opening not finished yet
      tutorial      true after that opening is watched to the end or skipped
-     bw1           legacy Chapter 1 clear from the old VN. The prologue does NOT set this.
-                   Chapter 1 has no script yet. Gallery still unlocks if bw1 is already true.
-   Gallery unlocks when story.tutorial === true OR legacy story.bw1 === true.
+     bw1           Chapter 1 opening cleared (Weisheng's Duel World announcement and the duel vs Sabrina).
+     keyCards      number of Key Cards taken. The Chapter 1 opening awards 1, and only the first clear counts.
+   Gallery unlocks when story.tutorial === true OR story.bw1 === true.
    The anime opening never autoplays, including on boot. It plays only from this
    prologue (tap to start, skip allowed) or from Gallery after the prologue is cleared.
    Practice partner is Toma (Lily if the hero is Toma), with that duelist's normal deck and LP.
-   Prologue VN uses the c_cafe art and labels the circle Narrator.
+   Prologue VN uses assets/img/story/cafe_bg.webp and labels the circle Narrator.
+   Only You may edit a deck, and only shared spells and traps. Other duelists use their fixed decks.
    Every <video> uses the Music slider (not sound effects). */
 "use strict";
 (function(){
@@ -52,7 +53,7 @@ const ARC_ART={
 const ARCS=[
   {id:"bw",name:"Battle World",blurb:"The night before the gate opens. One practice duel, then the season begins.",
     chapters:[
-      {id:"bw1",n:"Chapter 1",title:"The First Gathering",next:true},
+      {id:"bw1",n:"Chapter 1",title:"Duel World",next:true},
       {id:"bw2",n:"Chapter 2",title:"The Street Circuit"},
       {id:"bw3",n:"Chapter 3",title:"Blood Moon Gate"}
     ]},
@@ -73,7 +74,7 @@ const ARC_BY={};ARCS.forEach(a=>ARC_BY[a.id]=a);
 
 /* One shared prologue for every Battle World duelist. Only the hero portrait,
    name, and deck change. The practice partner is Toma (Lily if the hero is Toma):
-   kind, excited, normal deck and LP. Chapter 1 is unwritten. */
+   kind, excited, normal deck and LP. Chapter 1 opens on the Duel World announcement. */
 const PRACTICE_POOL=["kaito","ryuga","mira","sakura","toma","lily"];
 let practiceId="";
 function charName(id){
@@ -111,10 +112,19 @@ function afterWinScript(id,opp){
     {id:"narrator",name:"Narrator",text:"The cafe lights soften. Tomorrow, Battle World begins. Tonight, the opening plays.",end:true}
   ];
 }
-function cafeArt(){
-  try{if(typeof artSrc==="function"){const s=artSrc("c_cafe");if(s)return s;}}catch(e){}
-  if(typeof ART_DATA!=="undefined"&&ART_DATA.c_cafe)return ART_DATA.c_cafe;
-  return "assets/img/202772a95bdf.webp";
+const STORY_ART={
+  cafe:"assets/img/story/cafe_bg.webp",
+  town:"assets/img/story/town_bg.webp",
+  stadium:"assets/img/story/stadium_night_bg.webp",
+  city:"assets/img/story/city_birdseye_bg.webp",
+  roof:"assets/img/story/weisheng_rooftop.webp",
+  gauntlet:"assets/img/story/duel_disk_gauntlet.webp",
+  key:"assets/img/story/glass_key_card.webp"
+};
+function cafeArt(){return STORY_ART.cafe;}
+function vnArt(line){
+  if(line&&line.bg&&STORY_ART[line.bg])return STORY_ART[line.bg];
+  return STORY_ART.cafe;
 }
 
 const css=document.createElement("style");
@@ -245,6 +255,30 @@ css.textContent=`
 .zzz > .backbtn{z-index:8;min-width:108px}
 .zzz-ok{position:absolute;right:28px;bottom:18px;z-index:8;min-width:220px;font-family:Impact,"Arial Black",sans-serif;letter-spacing:2px;font-size:18px}
 .zzz-hint{position:absolute;left:560px;right:260px;bottom:24px;font-size:11px;opacity:.55;pointer-events:none;z-index:8}
+#vn-extra{position:absolute;right:28px;top:86px;z-index:4;display:flex;flex-direction:column;gap:12px;align-items:flex-end;pointer-events:none;max-width:480px}
+.vn-item{width:210px;border-radius:14px;overflow:hidden;border:2px solid #ffd36b;background:rgba(16,10,24,.9);box-shadow:0 12px 32px #000c}
+.vn-item img{display:block;width:100%;height:148px;object-fit:cover}
+.vn-item b{display:block;padding:6px 8px 8px;text-align:center;color:#ffe9a8;letter-spacing:1px;font-size:13px}
+.vn-cut{width:min(460px,42vw);border-radius:14px;overflow:hidden;border:2px solid #ffffff66;box-shadow:0 14px 36px #000c}
+.vn-cut img{display:block;width:100%;height:220px;object-fit:cover}
+.vn-cut span{display:block;padding:6px 10px;background:rgba(0,0,0,.72);font-size:13px;color:#fff}
+#youpick{position:absolute;inset:0;display:flex;flex-direction:column;padding:72px 28px 18px;box-sizing:border-box;color:#fff}
+#youpick h2{margin:0;font-family:Impact,"Arial Black",sans-serif;letter-spacing:2px;color:#ffd36b;font-size:34px}
+#youpick .sub{opacity:.8;margin:4px 0 10px;font-size:14px}
+.yp-fixed{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.yp-chip{font-size:12px;padding:4px 8px;border-radius:999px;background:#ffffff14;border:1px solid #ffd36b44}
+.yp-grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding-right:4px}
+.yp-card{display:flex;gap:10px;align-items:center;text-align:left;color:#fff;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.28));border:2px solid #ffffff22;border-radius:14px;padding:8px}
+.yp-card.on{border-color:#ffd36b}
+.yp-card img,.yp-card .ph{width:54px;height:74px;object-fit:cover;border-radius:8px;background:#000;flex:none}
+.yp-card .nm{font-weight:bold;font-size:14px}
+.yp-card .k{font-size:11px;letter-spacing:1px;color:#ffd36b;margin-top:2px}
+.yp-card .ctr{margin-left:auto;display:flex;align-items:center;gap:6px}
+.yp-card .ctr b{min-width:14px;text-align:center}
+.yp-foot{display:flex;align-items:center;gap:10px;margin-top:10px}
+.yp-foot .count{font-family:Impact,sans-serif;letter-spacing:1px;font-size:20px}
+.yp-foot .count.ok{color:#9dffb0}
+.yp-foot .count.bad{color:#ff9aa8}
 `;
 document.head.appendChild(css);
 
@@ -355,7 +389,8 @@ window.openStory=openStory;
 
 function arcMeta(a){
   if(a.id!=="bw")return "Coming soon";
-  if(chapterCleared("tutorial")||chapterCleared("bw1"))return "Chapter 1 next";
+  if(chapterCleared("bw1"))return "Chapter 1 cleared";
+  if(chapterCleared("tutorial"))return "Chapter 1 open";
   if(storyBag().story.tutorialWon)return "Opening waiting";
   return "Prologue open";
 }
@@ -382,23 +417,29 @@ function renderStory(){
 }
 function renderChapters(host){
   const a=ARC_BY[view.arc]||ARCS[0];
-  const unlocked=chapterCleared("tutorial")||chapterCleared("bw1");
+  const prologue=chapterCleared("tutorial")||chapterCleared("bw1");
   const who=a.id==="bw"&&protagonist()?charName(protagonist()):"";
+  const keys=a.id==="bw"?(storyBag().story.keyCards|0):0;
   const rows=a.chapters.map(c=>{
-    const next=a.id==="bw"&&c.next&&unlocked;
-    const tag=next?"NEXT · COMING SOON":"🔒 COMING SOON";
-    return `<button class="ch-row soon${next?" next":""}" data-soon="${c.id}" type="button"><span class="n">${esc(c.n)}</span><b>${esc(c.title)}</b><span class="tag">${tag}</span></button>`;
+    if(a.id==="bw"&&c.id==="bw1"){
+      if(!prologue)return `<button class="ch-row soon" data-soon="prologue" type="button"><span class="n">${esc(c.n)}</span><b>${esc(c.title)}</b><span class="tag">🔒 PROLOGUE FIRST</span></button>`;
+      const cleared=chapterCleared("bw1");
+      return `<button class="ch-row ${cleared?"clear":""}" data-ch="bw1" type="button"><span class="n">${esc(c.n)}</span><b>${esc(c.title)}</b><span class="tag">${cleared?"CLEARED · TO BE CONTINUED":"PLAY"}</span></button>`;
+    }
+    return `<button class="ch-row soon" data-soon="1" type="button"><span class="n">${esc(c.n)}</span><b>${esc(c.title)}</b><span class="tag">🔒 TO BE CONTINUED</span></button>`;
   }).join("");
   const cast=a.id==="bw"?`<button class="btn" id="st-cast" type="button">Change duelist</button>`:"";
+  const keyBit=a.id==="bw"?" Key Cards: "+keys+".":"";
   host.innerHTML=`<div class="st-wrap"><button class="btn backbtn" id="st-back" type="button">◀ Arcs</button>
     <div class="st-head"><h2>${esc(a.name.toUpperCase())}</h2>${cast}</div>
-    <div class="sub">${esc(a.blurb)}${who?" Playing as "+esc(who)+".":""}</div>
+    <div class="sub">${esc(a.blurb)}${who?" Playing as "+esc(who)+".":""}${keyBit}</div>
     <div class="ch-list">${rows}</div></div>`;
   host.querySelector("#st-back").onclick=()=>{view.page="arcs";renderStory();};
   const castBtn=host.querySelector("#st-cast");
   if(castBtn)castBtn.onclick=()=>openCast();
+  host.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>startBw1());
   host.querySelectorAll("[data-soon]").forEach(b=>b.onclick=()=>{
-    const msg=b.dataset.soon==="bw1"?"Chapter 1 is next. The scene isn't written yet.":"Coming soon.";
+    const msg=b.dataset.soon==="prologue"?"Clear the prologue first.":"To be continued.";
     try{toast(msg);}catch(e){}
     try{AUDIO.play("alert");}catch(e){}
     b.animate([{transform:"translateX(0)"},{transform:"translateX(-5px)"},{transform:"translateX(5px)"},{transform:"none"}],220);
@@ -566,7 +607,7 @@ function confirmCast(){
 }
 function openPrologue(id){
   practiceId=practicePartner(id);
-  view={page:"vn",arc:"bw",lines:prologueScript(id,practiceId),onDone:()=>beginTutorialDuel(id,practiceId)};
+  view={page:"vn",arc:"bw",vnSet:"prologue",lines:prologueScript(id,practiceId),onDone:()=>beginTutorialDuel(id,practiceId)};
   vn={i:0,shown:0,full:"",timer:null};
   renderStory();
   showScreen("story");
@@ -574,19 +615,23 @@ function openPrologue(id){
 function openAfterWin(id){
   const opp=practiceId||practicePartner(id);
   practiceId=opp;
-  view={page:"vn",arc:"bw",lines:afterWinScript(id,opp),onDone:()=>openStoryOpening()};
+  view={page:"vn",arc:"bw",vnSet:"prologue",lines:afterWinScript(id,opp),onDone:()=>openStoryOpening()};
   vn={i:0,shown:0,full:"",timer:null};
   renderStory();
   showScreen("story");
 }
 
 function renderVN(host){
-  const cafe=String(cafeArt()).replace(/"/g,"%22");
-  host.innerHTML=`<div class="vn vn-cafe" style="background:linear-gradient(180deg,rgba(18,10,8,.22),rgba(18,10,8,.5)),url(&quot;${cafe}&quot;) center/cover no-repeat"><button class="btn backbtn" id="st-back" type="button" style="z-index:3">◀ Back</button>
+  host.innerHTML=`<div class="vn vn-cafe"><button class="btn backbtn" id="st-back" type="button" style="z-index:3">◀ Back</button>
     <div class="vn-hit" id="vn-hit"></div>
     <div class="vn-port" id="vn-port"></div>
+    <div id="vn-extra"></div>
     <div class="vn-box"><div class="vn-name" id="vn-name"></div><div class="vn-text" id="vn-text"></div><div class="vn-next" id="vn-next">Tap to continue ▸</div></div></div>`;
-  host.querySelector("#st-back").onclick=e=>{e.stopPropagation();clearInterval(vn.timer);view.page=storyBag().story.tutorialWon?"arcs":"select";renderStory();};
+  host.querySelector("#st-back").onclick=e=>{
+    e.stopPropagation();clearInterval(vn.timer);
+    if(view.vnSet==="bw1"){view={page:"chapters",arc:"bw",lines:null,onDone:null};renderStory();return;}
+    view.page=storyBag().story.tutorialWon?"arcs":"select";renderStory();
+  };
   host.querySelector("#vn-hit").onclick=vnAdvance;
   showVNLine();
 }
@@ -604,6 +649,16 @@ function showVNLine(){
   else{
     const img=portOf(line.id);
     port.innerHTML=img?`<img src="${img}" alt="">`:`<div class="vn-crest">NARRATOR</div>`;
+  }
+  const root=document.querySelector("#story .vn");
+  const art=vnArt(line);
+  if(root&&art)root.style.background="linear-gradient(180deg,rgba(12,8,16,.25),rgba(8,6,14,.58)),url(\""+String(art).replace(/"/g,"%22")+"\") center/cover no-repeat";
+  const extra=document.getElementById("vn-extra");
+  if(extra){
+    const bits=[];
+    if(line.cut&&STORY_ART[line.cut])bits.push(`<div class="vn-cut"><img src="${STORY_ART[line.cut]}" alt=""><span>${esc(line.cutCap||"")}</span></div>`);
+    if(line.item&&STORY_ART[line.item])bits.push(`<div class="vn-item"><img src="${STORY_ART[line.item]}" alt=""><b>${esc(line.itemName||"")}</b></div>`);
+    extra.innerHTML=bits.join("");
   }
   const nm=document.getElementById("vn-name");
   nm.textContent=name;nm.style.background=col;nm.style.color="#1a1008";
@@ -632,6 +687,69 @@ function finishLines(){
   if(typeof done==="function")done();
 }
 
+function bw1Script(id){
+  const n=charName(id);
+  return [
+    {id:"narrator",name:"Narrator",bg:"roof",text:"Night wind cuts the highest roof in the city. A drone's red eye blinks. Weisheng is already there, one hand pointed at the sky."},
+    {id:"weisheng",bg:"roof",text:"Listen carefully. Not this street. Not this city. The whole world is about to become the Duel World."},
+    {id:"weisheng",bg:"city",cut:"city",cutCap:"The city, seen from above",text:"Every light down there is a duelist. They will all compete. One name waits at the end: Lord of Duels."},
+    {id:"weisheng",bg:"roof",item:"gauntlet",itemName:"Duel Gauntlet",text:"Every duelist receives a Duel Gauntlet. This is how you play. No table. No excuses. The gauntlet is the field."},
+    {id:"weisheng",bg:"roof",item:"key",itemName:"Key Card",text:"And a Key Card. Glass, and yours alone. Win a duel, and you take the loser's Key Card. Lose, and yours is gone."},
+    {id:"weisheng",bg:"stadium",cut:"stadium",cutCap:"Duel Stadium, night",text:"Collect 7 Key Cards and the Duel Stadium Finals will open for you. Only 5 duelists are allowed inside. The one who stands last is the Lord of Duels."},
+    {id:"narrator",name:"Narrator",bg:"roof",text:"The drone keeps recording. The announcement is already moving through the streets."},
+    {id:"narrator",name:"Narrator",bg:"town",text:"Back among the lights of town, the new gauntlet sits heavy on "+n+"'s arm. The Key Card is warm."},
+    {id:"sabrina",bg:"town",text:"I heard him! I want to be one of the five. So duel me. Right now. My Key Card against yours."},
+    {id:id,bg:"town",text:"You don't have to shout, Sabrina. If this is how the Duel World starts, I'll answer."},
+    {id:"sabrina",bg:"town",text:"Then it's a real duel. I'm not letting go of my friends, or my chance. Come on!",end:true}
+  ];
+}
+function bw1AfterScript(id){
+  const n=charName(id);
+  return [
+    {id:"sabrina",bg:"town",text:"You were really strong. Take it. My Key Card is yours. I'll get stronger, and I'll try again."},
+    {id:id,bg:"town",item:"key",itemName:"Key Card 1",text:n+" closes a hand around the glass card. First one. Six more, if the stadium is going to open."},
+    {id:"narrator",name:"Narrator",bg:"town",text:"One Key Card collected. The rest of Chapter 1 is still on the road ahead. To be continued.",end:true}
+  ];
+}
+function startBw1(){
+  const id=protagonist();
+  if(!id){openCast();return;}
+  if(!chapterCleared("tutorial")&&!chapterCleared("bw1")){
+    try{toast("Clear the prologue first.");}catch(e){}
+    return;
+  }
+  view={page:"vn",arc:"bw",vnSet:"bw1",lines:bw1Script(id),onDone:()=>beginSabrinaDuel(id)};
+  vn={i:0,shown:0,full:"",timer:null};
+  renderStory();
+  showScreen("story");
+}
+function beginSabrinaDuel(id){
+  const p=id||protagonist();
+  if(typeof startDuel!=="function"){try{toast("Could not start the duel.");}catch(e){}return;}
+  startDuel(p,"sabrina",{storyChapter:"bw1",first:"player",arena:"toy_town"});
+}
+function showSabrinaLoss(){
+  const layer=document.getElementById("modalLayer");
+  if(!layer){if(typeof leaveDuel==="function")leaveDuel();startBw1();return;}
+  layer.innerHTML=`<div class="modal-bg"><div class="modal" style="width:480px;text-align:center"><h2>Sabrina wins</h2>
+    <p>She keeps her Key Card, and she is still smiling. The challenge is not over.</p>
+    <div class="btnrow" style="display:flex;gap:10px;justify-content:center"><button class="btn gold" id="sab-retry" type="button">Retry duel</button><button class="btn" id="sab-back" type="button">Back</button></div></div></div>`;
+  layer.querySelector("#sab-retry").onclick=()=>{layer.innerHTML="";beginSabrinaDuel(protagonist());};
+  layer.querySelector("#sab-back").onclick=()=>{layer.innerHTML="";if(typeof leaveDuel==="function")leaveDuel();view={page:"chapters",arc:"bw",lines:null,onDone:null};renderStory();showScreen("story");};
+}
+function openBw1After(id){
+  view={page:"vn",arc:"bw",vnSet:"bw1",lines:bw1AfterScript(id||protagonist()),onDone:finishBw1};
+  vn={i:0,shown:0,full:"",timer:null};
+  renderStory();
+  showScreen("story");
+}
+function finishBw1(){
+  const n=storyBag().story.keyCards|0;
+  try{toast("Chapter 1 opening cleared. Key Cards: "+n+". To be continued.");}catch(e){}
+  view={page:"chapters",arc:"bw",lines:null,onDone:null};
+  renderStory();
+  showScreen("story");
+}
 /* ---------- tutorial duel: Toma (or Lily if the hero is Toma), normal deck and LP ---------- */
 function beginTutorialDuel(id,opp){
   const p=id||protagonist();
@@ -859,13 +977,32 @@ if(typeof startDuel==="function"){
   const prev=startDuel;
   startDuel=function(p,e,opts){
     const r=prev.apply(this,arguments);
-    if(opts&&opts.storyTutorial&&typeof G!=="undefined"&&G)G.storyTutorial=true;
+    if(opts&&typeof G!=="undefined"&&G){
+      if(opts.storyTutorial)G.storyTutorial=true;
+      if(opts.storyChapter)G.storyChapter=opts.storyChapter;
+    }
     return r;
   };
 }
 if(typeof showGameOver==="function"){
   const prev=showGameOver;
   showGameOver=function(winner,reason){
+    if(typeof G!=="undefined"&&G&&G.storyChapter==="bw1"){
+      const id=(G.match&&G.match[0])||protagonist();
+      if(winner==="player"){
+        const s=storyBag();
+        const first=!s.story.bw1;
+        if(first)s.story.keyCards=(s.story.keyCards|0)+1;
+        s.story.bw1=true;
+        saveStore(s);
+        window.adcStory=s.story;
+        if(typeof leaveDuel==="function")leaveDuel();
+        openBw1After(id);
+        return;
+      }
+      showSabrinaLoss();
+      return;
+    }
     if(!(typeof G!=="undefined"&&G&&G.storyTutorial))return prev.apply(this,arguments);
     const id=(G.match&&G.match[0])||protagonist();
     if(winner==="player"){
@@ -949,4 +1086,205 @@ try{
   mo.observe(document.documentElement,{childList:true,subtree:true});
 }catch(e){}
 tuneAllVideos();
+
+/* Monster stats are pulled into a shared level band so no duelist's ace
+   runs away with the match. Effects stay. Ink-copy tokens are left alone. */
+function balanceMonsters(){
+  if(typeof CARDS==="undefined"||window.__adcBalanced)return;
+  window.__adcBalanced=1;
+  const band={1:[400,1100],2:[500,1100],3:[700,1650],4:[700,1800],5:[1600,2300],6:[2000,2500],7:[2200,2700],8:[2500,3000],9:[2800,3200],10:[3000,3300]};
+  const by={};
+  for(const id in CARDS){
+    const c=CARDS[id];
+    if(!c||c.type!=="monster"||c.token||c.extra||c.retired)continue;
+    (by[c.ch]||(by[c.ch]=[])).push(c);
+  }
+  const TARGET=2650;
+  for(const ch in by){
+    const top=by[ch].slice().sort((a,b)=>b.atk-a.atk).slice(0,3);
+    if(!top.length)continue;
+    const avg=top.reduce((s,c)=>s+c.atk,0)/top.length;
+    if(!avg)continue;
+    let scale=TARGET/avg;
+    if(scale<0.92)scale=0.92;
+    if(scale>1.10)scale=1.10;
+    if(Math.abs(scale-1)<0.04)continue;
+    by[ch].forEach(c=>{
+      c.atk=Math.max(0,Math.round(c.atk*scale/50)*50);
+      c.def=Math.max(0,Math.round(c.def*scale/50)*50);
+    });
+  }
+  for(const id in CARDS){
+    const c=CARDS[id];
+    if(!c||c.type!=="monster"||c.retired||id==="ue_inkcopy")continue;
+    const b=band[c.level]||[2800,3300];
+    if(typeof c.atk==="number"&&c.atk>b[1])c.atk=b[1];
+    if(typeof c.def==="number"){
+      const hi=Math.round(b[1]*1.08/50)*50;
+      if(c.def>hi)c.def=hi;
+    }
+  }
+  const titan=CARDS.b_titan;
+  if(titan&&titan.fx&&titan.fx.onSummon&&titan.fx.onSummon.k==="destroyMon"&&!titan.fx.onSummon.maxAtk){
+    titan.fx.onSummon=Object.assign({},titan.fx.onSummon,{maxAtk:2600});
+  }
+  if(CARDS.cl_destiny){
+    if(CARDS.cl_destiny.atk>3300)CARDS.cl_destiny.atk=3300;
+    if(CARDS.cl_destiny.def>3400)CARDS.cl_destiny.def=3400;
+  }
+}
+balanceMonsters();
+
+/* Only You edits a deck, and only the shared spells and traps.
+   Monsters stay on the fixed starter list. Other duelists ignore saved decks. */
+function youMonsters(){
+  const d=defaultDeck("you"),o={};
+  for(const id in d)if(CARDS[id]&&CARDS[id].type==="monster")o[id]=d[id];
+  return o;
+}
+function sharedSpells(){
+  return Object.keys(CARDS).filter(id=>{
+    const c=CARDS[id];
+    if(!c||c.extra||c.retired||c.ch!=="shared")return false;
+    if(c.type!=="spell"&&c.type!=="trap")return false;
+    const k=c.fx&&c.fx.k;
+    if(k==="destroyAll"||k==="destroyWeakAll"||k==="destroyAllST")return false;
+    return true;
+  }).sort((a,b)=>CARDS[a].name.localeCompare(CARDS[b].name));
+}
+function youDeckOk(d){
+  if(!d)return false;
+  const m=youMonsters();
+  let n=0;
+  for(const id in m){if(d[id]!==m[id])return false;n+=m[id];}
+  const allow={};
+  sharedSpells().forEach(id=>allow[id]=1);
+  for(const id in d){
+    if(m[id])continue;
+    const c=CARDS[id];
+    if(!allow[id]||!c||d[id]<1||d[id]>3)return false;
+    n+=d[id];
+  }
+  return n>=30&&n<=40;
+}
+function youWorkingDeck(){
+  const o=Object.assign({},youMonsters());
+  const saved=store().decks&&store().decks.you;
+  const src=saved&&youDeckOk(saved)?saved:defaultDeck("you");
+  for(const id in src){
+    const c=CARDS[id];
+    if(c&&(c.type==="spell"||c.type==="trap"))o[id]=src[id];
+  }
+  return o;
+}
+if(typeof deckFor==="function"){
+  deckFor=function(ch){
+    if(ch==="you")return youWorkingDeck();
+    return defaultDeck(ch);
+  };
+}
+if(typeof savedDeck==="function"){
+  savedDeck=function(ch){
+    if(ch!=="you")return null;
+    const d=store().decks&&store().decks.you;
+    return d&&youDeckOk(d)?d:null;
+  };
+}
+if(typeof detailHTML==="function"){
+  const prevDetail=detailHTML;
+  detailHTML=function(c){
+    let html=prevDetail.apply(this,arguments);
+    if(c==="you")html=html.replace("Deck: built by you in the Deck Builder from every card in the game","Deck: fixed monsters · you choose the shared spells and traps");
+    return html.replace(/ · custom deck ✔/g,"");
+  };
+}
+function youSpellCount(){
+  let n=0;
+  for(const id in DB.deck){
+    const c=CARDS[id];
+    if(c&&(c.type==="spell"||c.type==="trap"))n+=DB.deck[id];
+  }
+  return n;
+}
+function renderYouSpells(){
+  const el=document.getElementById("builder");
+  if(!el)return;
+  const monsters=youMonsters();
+  let mcount=0;
+  const chips=Object.keys(monsters).map(id=>{
+    mcount+=monsters[id];
+    return `<span class="yp-chip">${esc(CARDS[id].name)} ×${monsters[id]}</span>`;
+  }).join("");
+  const spells=sharedSpells();
+  const sc=youSpellCount();
+  const total=mcount+sc;
+  const ok=total>=30&&total<=40;
+  const cards=spells.map(id=>{
+    const c=CARDS[id];
+    const n=DB.deck[id]||0;
+    const art=typeof artSrc==="function"?artSrc(id):"";
+    return `<div class="yp-card ${n?"on":""}"><img src="${art}" alt="" onerror="this.style.visibility='hidden'">
+      <div><div class="nm">${esc(c.name)}</div><div class="k">${esc(c.type==="trap"?"TRAP":(c.kind||"SPELL"))}</div></div>
+      <div class="ctr"><button class="btn" type="button" data-rm="${id}">−</button><b>${n}</b><button class="btn" type="button" data-add="${id}">+</button></div></div>`;
+  }).join("");
+  el.innerHTML=`<div id="youpick"><button class="btn backbtn" id="db-back" type="button">◀ Menu</button>
+    <h2>YOUR SPELLS &amp; TRAPS</h2>
+    <div class="sub">Monsters stay fixed (${mcount} cards). Choose shared spells and traps until the deck is 30–40. Max 3 copies.</div>
+    <div class="yp-fixed">${chips}</div>
+    <div class="yp-grid">${cards}</div>
+    <div class="yp-foot"><span class="count ${ok?"ok":"bad"}">${total} / 30–40</span>
+      <button class="btn green" id="db-save" type="button" ${ok?"":"disabled"}>Save</button>
+      <button class="btn" id="db-reset" type="button">Reset</button></div></div>`;
+  el.querySelector("#db-back").onclick=()=>showScreen("menu");
+  el.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.add;
+    if((DB.deck[id]||0)>=3){toast("Max 3 copies.");return;}
+    if(mcount+youSpellCount()>=40){toast("Deck is full (40).");return;}
+    DB.deck[id]=(DB.deck[id]||0)+1;
+    renderYouSpells();
+  });
+  el.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.rm;
+    if(!DB.deck[id])return;
+    DB.deck[id]--;
+    if(!DB.deck[id])delete DB.deck[id];
+    renderYouSpells();
+  });
+  const save=el.querySelector("#db-save");
+  if(save)save.onclick=()=>{
+    if(!youDeckOk(DB.deck)){toast("Deck must be 30–40 cards.");return;}
+    const st=store();
+    st.decks=st.decks||{};
+    const clean={};
+    const m=youMonsters();
+    for(const id in m)clean[id]=m[id];
+    sharedSpells().forEach(id=>{if(DB.deck[id])clean[id]=DB.deck[id];});
+    st.decks.you=clean;
+    if(st.decks){for(const k in st.decks)if(k!=="you")delete st.decks[k];}
+    saveStore(st);
+    toast("Spells and traps saved.");
+    renderYouSpells();
+  };
+  el.querySelector("#db-reset").onclick=()=>{
+    const st=store();
+    if(st.decks)delete st.decks.you;
+    saveStore(st);
+    DB.deck=youWorkingDeck();
+    toast("Back to the starter spells.");
+    renderYouSpells();
+  };
+}
+if(typeof openBuilder==="function"){
+  openBuilder=function(ch){
+    if(ch&&ch!=="you"){
+      try{toast("Only You can edit spells and traps. Other duelists keep a fixed deck.");}catch(e){}
+      return;
+    }
+    DB.ch="you";
+    DB.deck=youWorkingDeck();
+    showScreen("builder");
+    renderYouSpells();
+  };
+  renderBuilder=function(){renderYouSpells();};
+}
 })();
