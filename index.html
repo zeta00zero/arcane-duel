@@ -2978,17 +2978,33 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&DRAG.st&&DRAG.st.on
 /* ================= CHOICE UI (v6c) =================
    requestChoice(side, options, opts) -> Promise<card|null>
    The single entry point for every "choose a card" decision made by an effect.
-   - side: "player" | "enemy". AI sides (isAI(side): the enemy, or the player when G.auto) never see a modal:
-     they get opts.ai(cards) if given, else bestBy(cards, opts.score) if given, else the first card.
+   - side: "player" | "enemy". AI sides (isAI(side): the enemy, or the player when G.auto) never see a modal.
+     The best legal card is still computed the same way. Easy then takes a random legal card 70% of the time
+     (best 30%). Normal takes a random legal card 40% of the time. Hard always takes the best. No setting means Normal.
    - options: array of cards, or {card, hidden, note} objects (hidden = show the card back, e.g. a Set Spell/Trap).
    - opts: {title, sub, optional (adds a "Don't use" button, returns null), cancelLabel, confirmLabel, score, ai, src}
    Online multiplayer can wrap window.requestChoice: when `side` belongs to the remote guest, send
    {title, sub, optional, uids: options.map(o=>o.uid)} over the network and resolve with the card whose uid comes back. */
 function choiceNorm(o){return o&&o.card?o:{card:o};}
+function aiChoiceRandomRate(){
+  const d=G&&G.aiDiff;
+  if(d==="easy")return 0.70;
+  if(d==="hard")return 0;
+  return 0.40;
+}
+function aiEffectPick(cards,opts){
+  opts=opts||{};
+  let best=null;
+  if(opts.ai)best=opts.ai(cards);
+  else if(opts.score)best=bestBy(cards,opts.score);
+  else best=cards[0]||null;
+  if(!best||!cards||cards.length<2)return best||null;
+  if(Math.random()<aiChoiceRandomRate())return cards[Math.floor(Math.random()*cards.length)];
+  return best;
+}
 function requestChoice(side,options,opts){opts=opts||{};const list=(options||[]).map(choiceNorm).filter(o=>o.card);
   if(!list.length)return Promise.resolve(null);
-  if(!G||isAI(side)){const cards=list.map(o=>o.card);let c=null;
-    if(opts.ai)c=opts.ai(cards);else if(opts.score)c=bestBy(cards,opts.score);else c=cards[0];return Promise.resolve(c||null);}
+  if(!G||isAI(side)){const cards=list.map(o=>o.card);return Promise.resolve(aiEffectPick(cards,opts));}
   if(opts.amount)return amountChoice(list,opts);
   return new Promise(res=>{const gid=GID;let sel=-1,done=false;
     const fin=v=>{if(done)return;done=true;clearInterval(watch);const m=$("#chooser");if(m)m.closest(".modal-bg").remove();res(v);};
