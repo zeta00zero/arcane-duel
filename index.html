@@ -1746,6 +1746,8 @@ function anim(el,kf,dur,opt){if(!el||!el.animate)return realSleep(dur);
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function mk(id,owner){const d=CARDS[id];return Object.assign({},d,{uid:++UID,id,owner,faceUp:false,pos:"atk",summonedTurn:-1,posChangedTurn:-1,attackedTurn:-1,setTurn:-1,equippedTo:null,guardUsed:false,tempAtk:0,tempTurn:-1,bonus:0,attackCount:0});}
 function buildDeck(list,owner){const d=[];for(const id in list)for(let i=0;i<list[id];i++)if(CARDS[id])d.push(mk(id,owner));return shuffle(d);}
+/* One opening deal for every seat. Both sides draw by popping a Fisher-Yates shuffle. */
+function dealOpening(sd,n){for(let i=0;i<(n||5)&&sd.deck&&sd.deck.length;i++)sd.hand.push(sd.deck.pop());return sd.hand;}
 function tributesNeeded(c){return c.level>=7?2:c.level>=5?1:0;}
 function mons(s){return S(s).monsters.filter(Boolean);}
 function sts(s){return S(s).st.filter(Boolean);}
@@ -1782,7 +1784,7 @@ function startDuel(pChar,eChar,opts){
     sides:{player:mkSide(pChar,"player"),enemy:mkSide(eChar,"enemy")},stats:{aces:0,effects:0},arena:pickArena(pChar,eChar,opts.arena)};
   setArena(G.arena);
   if(opts.speed!=null)SPEED=opts.speed;
-  for(let i=0;i<5;i++){S("player").hand.push(S("player").deck.pop());S("enemy").hand.push(S("enemy").deck.pop());}
+  dealOpening(S("player"),5);dealOpening(S("enemy"),5);
   const first=opts.first||(Math.random()<.5?"player":"enemy");
   $("#coin").textContent="Coin toss: "+(first==="player"?"you go first":"rival goes first");
   log(`${S("player").name} vs ${S("enemy").name} — duel start!`,"s");log("Coin toss: "+(first==="player"?S("player").name+" goes first":S("enemy").name+" goes first")+".","s");
@@ -4279,7 +4281,7 @@ const LINKS={
   run:async s=>{const sd=S(s);const opts=[...sd.deck.filter(c=>c.type==="monster"&&c.race==="Robot"&&!c.extra).map(c=>({card:c,note:"From your deck"})),...sd.gy.filter(c=>c.type==="monster"&&c.race==="Robot"&&!c.extra).map(c=>({card:c,note:"From your Graveyard"}))];
     const r=await choose(s,opts,{title:"Emergency Combine: summon a Robot",score:c=>c.atk});if(!r)return;
     if(!await specialSummon(s,r,sd.gy.includes(r)?"gy":"deck"))return;r.lkNoFx=1;let n=0;
-    if(isAI(s)){const keep=P.ben.aiKeepDeck;const fodder=[...sd.hand.filter(c=>c.type==="trap"||c.type==="monster"&&c.atk<1200),...sd.deck.slice(0,Math.max(0,sd.deck.length-keep))];
+    if(isAI(s)){const keep=P.ben.aiKeepDeck;const bag=sd.deck.filter(c=>c!==r).slice();shuffle(bag);const fodder=[...sd.hand.filter(c=>c.type==="trap"||c.type==="monster"&&c.atk<1200),...bag.slice(0,Math.max(0,bag.length-keep))];
       for(const c of fodder){const z=sd.hand.includes(c)?sd.hand:sd.deck;const k=z.indexOf(c);if(k<0)continue;z.splice(k,1);toGY(c);n++;}
       if(n)say(s,`${sd.name} sends ${n} cards to the Graveyard.`);}
     else for(;;){const opts2=[...mons(s).filter(m=>m!==r).map(c=>({card:c,note:"From your field"})),...sts(s).map(c=>({card:c,note:"From your field"})),...sd.hand.map(c=>({card:c,note:"From your hand"})),...sd.deck.map(c=>({card:c,note:"From your deck"}))];
@@ -5269,7 +5271,7 @@ function tagSetup(cfg){const g=G;cfg=cfg||{};
     if(i<2)st={char:sd.char,name:sd.name,lp:sd.lp,deck:sd.deck,hand:sd.hand,normalSummoned:false,lk:{used:0,lost:0}};
     else{const ch=cfg.chars[i];const nm=cfg.names&&cfg.names[i]||(ch==="you"?(human[i]&&!cfg.net?playerName():"Mystery Duelist"):CHARS[ch].name);
       const deck=buildDeck(cfg.decks&&cfg.decks[i]||deckFor(ch,human[i]&&!cfg.net?"player":"enemy"),team);
-      st={char:ch,name:nm,lp:START_LP,deck,hand:[],normalSummoned:false,lk:{used:0,lost:0}};for(let k=0;k<5;k++)st.hand.push(st.deck.pop());}
+      st={char:ch,name:nm,lp:START_LP,deck,hand:[],normalSummoned:false,lk:{used:0,lost:0}};dealOpening(st,5);}
     if(cfg.names&&cfg.names[i])st.name=cfg.names[i];
     Object.assign(st,{i,key:tagLabel(i),team,human:!!human[i],out:false,outT:0,ai:!human[i]});
     st.deck.forEach(c=>c.seat=i);st.hand.forEach(c=>c.seat=i);seats.push(st);}
