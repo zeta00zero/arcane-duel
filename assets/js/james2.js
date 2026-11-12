@@ -1,6 +1,7 @@
 /* James — The Mask Bike Warrior (second form).
-   Art lives in assets/img/james2/ and is meant to be swapped for finished art later.
-   A monster can wear only one Equip Spell. A new one sends the old one to the Graveyard. */
+   Art lives in assets/img/james2/. Replace a file to change that picture.
+   A monster can wear only one Equip Spell. A new one sends the old one to the Graveyard.
+   The five armours are Red, Blue, Yellow, Purple and Gold. */
 (function(){
 const ART={
   portrait:"assets/img/james2/portrait.webp",
@@ -12,7 +13,6 @@ const ART={
   jb_yellow:"assets/img/james2/jb_yellow.webp",
   jb_gun:"assets/img/james2/jb_gun.webp",
   jb_angel:"assets/img/james2/jb_angel.webp",
-  jb_boom:"assets/img/james2/jb_boom.webp",
   jb_wing:"assets/img/james2/jb_wing.webp",
   jb_liner:"assets/img/james2/jb_liner.webp",
   linerCut:"assets/img/james2/liner-cut.webp",
@@ -22,7 +22,7 @@ const ART={
   jb_veil:"assets/img/james2/jb_veil.webp"
 };
 const R="Maskbike";
-const EQUIPS=["jb_red","jb_blue","jb_yellow","jb_gun","jb_angel","jb_boom"];
+const EQUIPS=["jb_red","jb_blue","jb_yellow","jb_gun","jb_angel"];
 const ONE="Only one Equip Spell can be equipped to a monster. A new Equip Spell replaces the old one.";
 
 function say(s,msg){try{log(msg,sc(s));}catch(e){}}
@@ -39,7 +39,7 @@ window.jbGrant=function(m,key){
 };
 function worth(c){
   const g=c.fx&&c.fx.grant||{};
-  return (c.fx.v||0)+(g.double?400:0)+(g.smashDef?250:0)+(g.pierce?150:0)+(g.burn?120:0)+(g.angel?140:0);
+  return (c.fx.v||0)+(g.double?400:0)+(g.kijin?280:0)+(g.pierce?150:0)+(g.burn?120:0)+(g.angel?140:0);
 }
 function legalEquipTargets(s,spell){
   return mons(s).filter(m=>m.faceUp&&(!spell.fx.race||m.race===spell.fx.race)&&!(m.fx&&m.fx.noEquip)&&!m.unaffected);
@@ -62,11 +62,10 @@ M("jb_liner","james2","Rider Warrior Liner Form",8,"LIGHT",R,3000,2500,"",{ignit
 CARDS.jb_liner.extra=true;
 SP("jb_red","james2","Red Oni Sword Armour","Equip","",{k:"equip",v:500,race:R,grant:{double:true}},"Oni steel. The rider strikes twice.");
 SP("jb_blue","james2","Blue Turtle Spear Armour","Equip","",{k:"equip",v:200,race:R,grant:{pierce:true}},"A turtle spear. The point goes through a shield.");
-SP("jb_yellow","james2","Yellow Kijin Axe Armour","Equip","",{k:"equip",v:700,race:R,grant:{smashDef:true}},"A kijin axe. A defense position does not save them.");
+SP("jb_yellow","james2","Yellow Kijin Axe Armour","Equip","",{k:"equip",v:700,race:R,grant:{kijin:true}},"A kijin axe. One clean hit, and another card leaves.");
 SP("jb_gun","james2","Purple Dragon Gun Armour","Equip","",{k:"equip",v:300,race:R,grant:{burn:400}},"A dragon barrel. Once per turn it breathes fire.");
 SP("jb_angel","james2","Gold Angel Dagger","Equip","",{k:"equip",v:300,race:R,grant:{angel:true}},"A golden dagger. Once per turn it refuses to break.");
-SP("jb_boom","james2","Boomerang","Equip","",{k:"equip",v:200,race:R,grant:{boom:true}},"A light throwing edge. Once per turn, coming home to the hand.");
-SP("jb_climax","james2","Climax Form","Normal","",{k:"climax"},"Five different armours leave the field, the hand and the deck. The rider takes every form at once.");
+SP("jb_climax","james2","Climax Form","Normal","",{k:"climax"},"The five armours leave the field, the hand and the deck. The rider takes every form at once.");
 TR("jb_guard","james2","Mask Lock","",{k:"negate",needRace:R},"The mask holds. That attack never lands.");
 TR("jb_swap","james2","Form Change","",{k:"jbSwap",needRace:R},"Mid-fight, the armour comes off and a different one locks on.");
 TR("jb_veil","james2","Shadow Slip","",{k:"shrink",v:800,needRace:R},"The rider slips the blow. The attacker loses 800 ATK.");
@@ -76,14 +75,13 @@ const BLURB={
   jb_boy:"Once per turn: add 1 Rider Warrior from your Deck or Graveyard to your hand.",
   jb_wall:"Equip Spells cannot be equipped to this card. Once per turn: add 1 Equip Spell from your Graveyard to your hand.",
   jb_wing:"Unaffected by other card effects. During the End Phase of your next turn, send this card to the Graveyard. Once per duel: destroy all monsters your opponent controls. It cannot attack the turn it uses this effect.",
-  jb_liner:"Stays only for the turn it is summoned. Once per duel: equip Red Oni Sword Armour, Blue Turtle Spear Armour, Yellow Kijin Axe Armour, Purple Dragon Gun Armour and Gold Angel Dagger from your hand, Deck and/or Graveyard at the same time. The one-equip rule is lifted for this card this turn, and all of their boosts and effects apply. At the end of that turn, shuffle every card on your field and your banished cards into your Deck, then draw 3. Your opponent's field is not affected.",
-  jb_climax:"Send 5 different Equip Spells from your hand, Deck and/or field to the Graveyard, and Rider Warrior must be face-up on your field. Special Summon Rider Warrior The Climax Golden Wing Mode. "+ONE,
+  jb_liner:"Stays only for the turn it is summoned. Once per duel: equip Red Oni Sword Armour, Blue Turtle Spear Armour, Yellow Kijin Axe Armour, Purple Dragon Gun Armour and Gold Angel Dagger from your hand, Deck and/or Graveyard at the same time. The one-equip rule is lifted for this card this turn, and all of their boosts and effects apply together, including Yellow Kijin Axe Armour's once-per-turn send. At the end of that turn, shuffle every card on your field and your banished cards into your Deck, then draw 3. Your opponent's field is not affected.",
+  jb_climax:"Send Red Oni Sword Armour, Blue Turtle Spear Armour, Yellow Kijin Axe Armour, Purple Dragon Gun Armour and Gold Angel Dagger from your hand, Deck and/or field to the Graveyard, and Rider Warrior must be face-up on your field. Special Summon Rider Warrior The Climax Golden Wing Mode. "+ONE,
   jb_red:"Equip to a Maskbike, except Train Liner Dasher. It gains 500 ATK and can attack twice. "+ONE,
   jb_blue:"Equip to a Maskbike, except Train Liner Dasher. It gains 200 ATK and pierces. "+ONE,
-  jb_yellow:"Equip to a Maskbike, except Train Liner Dasher. It gains 700 ATK. A Defense Position monster it battles is destroyed. "+ONE,
+  jb_yellow:"Equip to a Maskbike, except Train Liner Dasher. It gains 700 ATK. Once per turn, if the equipped monster destroys an opponent's monster by battle or deals battle damage to your opponent: send 1 card from the opponent's hand or field to the Graveyard. You choose the zone. You choose the card on the field; a card from the hand is random. "+ONE,
   jb_gun:"Equip to a Maskbike, except Train Liner Dasher. It gains 300 ATK. Once per turn: inflict 400 damage. "+ONE,
   jb_angel:"Equip to a Maskbike, except Train Liner Dasher. It gains 300 ATK. Once per turn, the first time it would be destroyed, it is not. "+ONE,
-  jb_boom:"Equip to a Maskbike, except Train Liner Dasher. It gains 200 ATK. Once per turn, when this card is sent from the field to the Graveyard, return it to the hand. "+ONE,
   jb_guard:"If you control a Maskbike: negate the attack and end the Battle Phase.",
   jb_swap:"If you control a Maskbike: send its Equip Spell to the Graveyard and equip a different Equip Spell from your Deck.",
   jb_veil:"If you control a Maskbike: the attacking monster loses 800 ATK this turn."
@@ -117,7 +115,7 @@ if(typeof TMODES!=="undefined")TMODES.james="james2";
 if(typeof TMBASE!=="undefined")TMBASE.james2="james";
 const JB_DECK={
   jb_rider:3,jb_boy:3,jb_wall:2,
-  jb_red:3,jb_blue:3,jb_yellow:2,jb_gun:2,jb_angel:2,jb_boom:3,
+  jb_red:3,jb_blue:3,jb_yellow:3,jb_gun:3,jb_angel:3,
   jb_climax:3,jb_guard:2,jb_swap:2,jb_veil:2,
   x_seal:1,x_oracle:1,x_revive:1,x_thorn:1,x_veil:1
 };
@@ -212,7 +210,7 @@ function climaxOk(s){
 }
 async function climax(s,spell){
   const sd=S(s);
-  if(!climaxOk(s)){say(s,"Climax Form needs Rider Warrior and 5 different Equip Spells.");return;}
+  if(!climaxOk(s)){say(s,"Climax Form needs Rider Warrior and the 5 armours.");return;}
   const picked=[];
   const used={};
   const take=()=>{
@@ -221,7 +219,7 @@ async function climax(s,spell){
     }
   };
   take();
-  if(picked.length<5){say(s,"Not enough different Equip Spells.");return;}
+  if(picked.length<5){say(s,"Not enough of the 5 armours.");return;}
   G.jbSending=1;
   for(const p of picked){
     const i=sd[p.z].indexOf(p.c);
@@ -316,18 +314,6 @@ if(typeof addTemp==="function"){
   const prev=addTemp;
   addTemp=function(c,d){if(c&&c.unaffected)return;return prev.apply(this,arguments);};
 }
-if(typeof toGY==="function"){
-  const prev=toGY;
-  toGY=function(c){
-    const boom=c&&c.id==="jb_boom"&&c.equippedTo&&!G.jbSending&&G&&S(c.owner).jbBoom!==G.turn;
-    const r=prev.apply(this,arguments);
-    if(boom){
-      const sd=S(c.owner);const i=sd.gy.indexOf(c);
-      if(i>=0){sd.gy.splice(i,1);sd.hand.push(c);c.equippedTo=null;sd.jbBoom=G.turn;say(c.owner,"Boomerang returns to the hand.");}
-    }
-    return r;
-  };
-}
 if(typeof canAttackWith==="function"){
   const prev=canAttackWith;
   canAttackWith=function(s,c){
@@ -338,17 +324,86 @@ if(typeof canAttackWith==="function"){
     return !!(window.jbGrant&&jbGrant(c,"double")&&c.attackedTurn===G.turn&&c.attackCount<2);
   };
 }
+function pullToGY(c){
+  const f=find(c.uid);if(!f)return;
+  if(c.type==="monster"){
+    for(const side of ["player","enemy"]){
+      const st=S(side).st;
+      for(let i=0;i<st.length;i++)if(st[i]&&st[i].equippedTo===c.uid){const e=st[i];st[i]=null;toGY(e);}
+    }
+  }
+  if(f.zone==="monsters"||f.zone==="st")S(f.side)[f.zone][f.idx]=null;
+  else S(f.side)[f.zone].splice(f.idx,1);
+  toGY(c);
+}
+function kijinBestZone(field,handN){
+  if(!field.length)return "hand";
+  if(!handN)return "field";
+  const threatSum=field.filter(c=>c.type==="monster").reduce((a,c)=>a+(c.faceUp?atkOf(c):1400),0);
+  if(threatSum>=1600)return "field";
+  if(handN>=2&&threatSum<1000)return "hand";
+  return "field";
+}
+function askKijinZone(s,field,handN){
+  const best=kijinBestZone(field,handN);
+  const opts=[];
+  if(field.length)opts.push("field");
+  if(handN)opts.push("hand");
+  if(opts.length===1)return Promise.resolve(opts[0]);
+  if(isAI(s)&&typeof aiEffectPick==="function"){
+    const cards=opts.map(id=>({id:id,uid:id,name:id,type:"spell",fx:{}}));
+    const pick=aiEffectPick(cards,{score:c=>c.id===best?8:1});
+    return Promise.resolve(pick&&pick.id||best);
+  }
+  return new Promise(res=>{
+    const wrap=document.createElement("div");wrap.className="modal-bg";
+    wrap.innerHTML=`<div class="modal chooser"><h2>Yellow Kijin Axe Armour</h2><p class="chsub">Once per turn: send 1 card from the opponent's hand or field to the Graveyard. A card from the hand is random.</p><div class="btnrow" style="display:flex;gap:10px;justify-content:center">${field.length?'<button class="btn gold" id="kj-field">Choose from the field</button>':""}${handN?'<button class="btn gold" id="kj-hand">Random card from the hand</button>':""}</div></div>`;
+    ($("#modalLayer")||document.body).appendChild(wrap);
+    const done=z=>{wrap.remove();res(z);};
+    const a=wrap.querySelector("#kj-field");if(a)a.onclick=()=>done("field");
+    const b=wrap.querySelector("#kj-hand");if(b)b.onclick=()=>done("hand");
+  });
+}
+async function kijinSend(s,att,axe){
+  if(!axe||axe.jbKijin===G.turn||!G||G.over)return;
+  const o=other(s);
+  const field=[...S(o).monsters,...S(o).st].filter(Boolean);
+  if(!field.length&&!S(o).hand.length)return;
+  axe.jbKijin=G.turn;
+  try{floatText(elOf(att.uid)||$("#duel-"+o),"KIJIN","info");}catch(e){}
+  say(s,"Yellow Kijin Axe Armour — Kijin!");
+  const zone=await askKijinZone(s,field,S(o).hand.length);
+  if(!G||G.over)return;
+  let card=null;
+  if(zone==="hand"&&S(o).hand.length)card=S(o).hand[Math.floor(Math.random()*S(o).hand.length)];
+  else{
+    const live=[...S(o).monsters,...S(o).st].filter(Boolean);
+    if(!live.length)return;
+    card=await requestChoice(s,live.map(c=>({card:c,hidden:!c.faceUp,note:c.faceUp?"":"A face-down card."})),{
+      title:"Yellow Kijin Axe Armour: send a card",
+      sub:"Choose a card on the opponent's field. It goes to the Graveyard.",
+      score:c=>c.type==="monster"?(c.faceUp?atkOf(c):1500)+400:(c.faceUp?800:700)
+    });
+  }
+  if(!card||!find(card.uid))return;
+  const name=(zone==="hand"||card.faceUp)?card.name:"a face-down card";
+  pullToGY(card);
+  say(s,"Kijin sends "+name+" to the Graveyard.");
+  render();await sleep(200);
+}
+if(typeof GRANT_NAME!=="undefined")GRANT_NAME.kijin="Kijin";
+if(typeof GRANT_TXT!=="undefined")GRANT_TXT.kijin="Kijin (once per turn, after a battle destroy or battle damage, send 1 card from the opponent's hand or field to the Graveyard)";
 if(typeof attack==="function"){
   const prev=attack;
   attack=async function(s,attUid,tgtUid){
     const att=find(attUid)&&find(attUid).card;
-    const tgt=tgtUid&&find(tgtUid)&&find(tgtUid).card;
-    const smash=att&&tgt&&jbGrant(att,"smashDef")&&(tgt.pos==="def"||!tgt.faceUp);
+    const axe=att&&equipsOn(att).find(e=>e.id==="jb_yellow");
+    const lp=S(other(s)).lp;
     await prev.apply(this,arguments);
-    if(smash&&!G.over&&tgt&&find(tgt.uid)&&find(tgt.uid).zone==="monsters"){
-      say(s,att.name+"'s axe breaks the defense.");
-      await destroyMonsters([tgt]);
-    }
+    if(!axe||!G||G.over||axe.jbKijin===G.turn)return;
+    const gone=tgtUid&&(!find(tgtUid)||find(tgtUid).zone!=="monsters");
+    const hurt=S(other(s)).lp<lp;
+    if(gone||hurt)await kijinSend(s,att,axe);
   };
 }
 if(typeof endPhase==="function"){
@@ -569,7 +624,7 @@ async function linerSkill(s){
 if(typeof LINKS!=="undefined"){
   LINKS.james2={
     name:"Liner Form",
-    text:"Once per duel, while your LP is 4000 or less: banish Rider Warrior, Masked Boy and Train Liner Dasher from your hand, Deck, field and/or Graveyard, and Special Summon Rider Warrior Liner Form. It stays this turn only. Once per duel: equip it with all 5 armour Equip Spells from your hand, Deck and/or Graveyard at once. At the end of this turn, shuffle every card on your field and your banished cards into your Deck, then draw 3. Your opponent's field is not affected.",
+    text:"Once per duel, while your LP is 4000 or less: banish Rider Warrior, Masked Boy and Train Liner Dasher from your hand, Deck, field and/or Graveyard, and Special Summon Rider Warrior Liner Form. It stays this turn only. Once per duel: equip it with all 5 armour Equip Spells at once. Their boosts and effects apply together, including Yellow Kijin Axe Armour's once-per-turn send. At the end of this turn, shuffle every card on your field and your banished cards into your Deck, then draw 3. Your opponent's field is not affected.",
     can:s=>!!chooseMats(s),
     ai:(s,ph)=>{
       if(ph===2)return 0;
