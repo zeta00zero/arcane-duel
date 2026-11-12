@@ -1661,7 +1661,7 @@ function probeVideo(){if(VID.state)return;VID.state="probing";const v=document.c
   const t=setTimeout(()=>done(false),3000);v.onloadedmetadata=()=>done(true);v.onerror=()=>done(false);v.src=ASSET+"video/ace_hero.mp4";}
 function videoReady(){return new Promise(r=>{if(VID.state==="ok"||VID.state==="bad")return r(VID.state==="ok");probeVideo();VID.wait.push(()=>r(VID.state==="ok"));});}
 
-function artImg(c){return c&&c.id&&!ART_BAD[c.id]?`<img class="cimg" src="${artSrc(c.id)}" alt="" draggable="false" decoding="async" onerror="artErr(this,'${c.id}')">`:"";}
+function artImg(c){return c&&c.id&&!ART_BAD[c.id]?`<img class="cimg" src="${artSrc(c.id)}" alt="" draggable="false" decoding="sync" onerror="artErr(this,'${c.id}')">`:"";}
 function artErr(el,id){ART_BAD[id]=1;if(el&&el.parentNode)el.parentNode.removeChild(el);}
 const EXPRS=["talk","point","hurt","win"];
 function exprSrc(img,x){if(!x)return PORTRAITS[img];const k=img+"_"+x;return (typeof EXPR_DATA!=="undefined"&&EXPR_DATA[k])||ASSET+"expr/"+k+".webp";}
