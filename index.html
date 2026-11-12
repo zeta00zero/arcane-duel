@@ -2093,6 +2093,7 @@ async function attack(s,attUid,tgtUid){
       if(k==="noDamage")noDmg=true;
       if(k==="shrink"){addTemp(att,choice.fx.v);floatText(elOf(att.uid),`-${choice.fx.v} ATK`,"dmg");render();await sleep(300);}
       if(k==="burnBack"){await changeLP(s,-choice.fx.v);}
+      if(window.jbTrapEffect)await jbTrapEffect(k,o,s,att,tgt,choice);
     }}
   const ac=find(att.uid);if(!ac||ac.zone!=="monsters")return;
   const attEl=elOf(att.uid),tgtEl=tgt?elOf(tgt.uid):$("#duel-"+o);
@@ -2107,7 +2108,7 @@ async function attack(s,attUid,tgtUid){
     else if(A<D){await battleDestroy([att]);await changeLP(s,-(D-A));}
     else{log("Equal ATK — both monsters are destroyed!","s");await battleDestroy([att,tgt]);}
   }else{const D=tgt.def;
-    if(A>D){await battleDestroy([tgt]);if(att.fx.pierce){if(!noDmg){log(`${att.name} pierces through!`,sc(s));await changeLP(o,-(A-D));}else floatText($("#duel-"+o),"BLOCKED","info");}}
+    if(A>D){await battleDestroy([tgt]);if(att.fx.pierce||(window.jbGrant&&jbGrant(att,"pierce"))){if(!noDmg){log(`${att.name} pierces through!`,sc(s));await changeLP(o,-(A-D));}else floatText($("#duel-"+o),"BLOCKED","info");}}
     else if(A<D){floatText(elOf(tgt.uid),"REPELLED","info");await changeLP(s,-(D-A));}
     else{floatText(elOf(tgt.uid),"HOLD","info");log("ATK equals DEF — nothing is destroyed.","s");await sleep(300);}}
   if(flipped&&tgt.fx.flip&&!G.over){log(`FLIP: ${tgt.name}'s effect activates!`,sc(o));await resolveFx(o,tgt.fx.flip,tgt);}
@@ -2370,7 +2371,10 @@ function onCardClick(uid,el){
       G.ui={mode:"attack",attUid:uid};render();return;}
     if(inMain()){const can=c.summonedTurn!==G.turn&&c.posChangedTurn!==G.turn;
       const label=!c.faceUp?"🔄 Flip Summon":c.pos==="atk"?"🛡 Change to Defense":"⚔ Change to Attack";
-      openMenu(el,[{label:label+(can?"":" (not this turn)"),disabled:!can,cls:"gold",fn:()=>act(()=>changePosition("player",c.uid))},{label:"🔍 Inspect",fn:()=>inspect(c.uid)},{label:"Cancel",fn:()=>{}}]);}}}
+      const items=[{label:label+(can?"":" (not this turn)"),disabled:!can,cls:"gold",fn:()=>act(()=>changePosition("player",c.uid))}];
+      if(window.jbIgniteItem){const it=jbIgniteItem(c);if(it)items.unshift(it);}
+      items.push({label:"🔍 Inspect",fn:()=>inspect(c.uid)},{label:"Cancel",fn:()=>{}});
+      openMenu(el,items);}}}
 function startSummon(c,setMode,pref){const need=tributesNeeded(c);
   if(!need){act(()=>normalSummon("player",c.uid,[],setMode,pref));return;}
   G.ui={mode:"tribute",handUid:c.uid,need,chosen:[],set:setMode,pref};render();}
@@ -4701,9 +4705,9 @@ const UI9={
   vs:{show:2400,bang:900}   /* ms at SPEED 1: plain VS presentation, then DUEL! (no catchphrases on the VS screen) */
 };
 /* Duelist modes: the base entry on the ring and its alternate mode (both are full CHARS entries with their own deck/ace/skill). */
-const MODES={kelvin:"darkkelvin",weiyao:"weiyao2",eryll:"eryll2",keith:"keith2",lemon:"lemon2",weisheng:"weisheng2",clement:"clement2"};
-const MODE_BASE={darkkelvin:"kelvin",weiyao2:"weiyao",eryll2:"eryll",keith2:"keith",lemon2:"lemon",weisheng2:"weisheng",clement2:"clement"};
-const MODE_LOOK={darkkelvin:"dark",weiyao2:"gold",kelvin:"gold",weiyao:"gold",eryll2:"dark",eryll:"gold",keith2:"gold",keith:"gold",lemon2:"gold",lemon:"gold",weisheng2:"dark",weisheng:"gold",clement2:"gold",clement:"gold"};
+const MODES={kelvin:"darkkelvin",weiyao:"weiyao2",eryll:"eryll2",keith:"keith2",lemon:"lemon2",weisheng:"weisheng2",clement:"clement2",james:"james2"};
+const MODE_BASE={darkkelvin:"kelvin",weiyao2:"weiyao",eryll2:"eryll",keith2:"keith",lemon2:"lemon",weisheng2:"weisheng",clement2:"clement",james2:"james"};
+const MODE_LOOK={darkkelvin:"dark",weiyao2:"gold",kelvin:"gold",weiyao:"gold",eryll2:"dark",eryll:"gold",keith2:"gold",keith:"gold",lemon2:"gold",lemon:"gold",weisheng2:"dark",weisheng:"gold",clement2:"gold",clement:"gold",james2:"gold",james:"gold"};
 (function(){
 const RS={rot:0,mode:{},cfg:null,el:null,front:null};
 window.RING9=RS;
@@ -6014,7 +6018,7 @@ function openTagSelect(opts){opts=opts||{};SEAT.online=opts.online||null;if(!SEA
   if(!SEAT.online)SEAT.human=[true,false,false,false];SEAT.cur=SEAT.online?SEAT.online.mySeat:0;
   mkScreen("tagsel");showScreen("tagsel");renderTagSelect();}
 window.openTagSelect=openTagSelect;window.renderTagSelect=()=>renderTagSelect();window.TAGSEAT=SEAT;
-const TMODES={kelvin:"darkkelvin",weiyao:"weiyao2",eryll:"eryll2",keith:"keith2",lemon:"lemon2",weisheng:"weisheng2",clement:"clement2"};
+const TMODES={kelvin:"darkkelvin",weiyao:"weiyao2",eryll:"eryll2",keith:"keith2",lemon:"lemon2",weisheng:"weisheng2",clement:"clement2",james:"james2"};
 const TMBASE={};for(const k in TMODES)TMBASE[TMODES[k]]=k;
 const tBase=c=>TMBASE[c]||c;const tFlip=c=>TMODES[c]&&CHARS[TMODES[c]]?TMODES[c]:(TMBASE[c]||c);const tDual=c=>!!(TMODES[tBase(c)]&&CHARS[TMODES[tBase(c)]]);
 window.tagFlipSeat=i=>{SEAT.chars[i]=tFlip(SEAT.chars[i]);renderTagSelect();};
@@ -8192,5 +8196,6 @@ window.__adcTag={create:(name,code)=>tnCreate(name||"Host",code||null),join:(cod
     fieldP:G&&G.sides?G.sides.player.monsters.map(c=>c?(c.id||"?"):null):null,fieldE:G&&G.sides?G.sides.enemy.monsters.map(c=>c?(c.hidden?"?":c.id):null):null,
     log:(G&&G.log||[]).slice(0,12).map(e=>e.msg),notices:TN.notices.slice(),lastOver:TN.lastOver,stats:JSON.parse(JSON.stringify(TN.stats)),pend:TN.pend.size,hp:TN.hp.size,result:!!document.querySelector(".tagres")};}};
 </script>
+<script src="assets/js/james2.js"></script>
 <script src="assets/js/story-mode.js"></script>
 </body></html>
