@@ -3177,8 +3177,8 @@ activateSpell=async function(s,uid,targetUid,ctx,pref){
       if(cos.fx.onEquip&&!G.over){log(`${cos.name}'s effect activates!`,sc(s));await resolveFx(s,cos.fx.onEquip,cos);}}}
   return r;};
 /* ---------- text ---------- */
-const GRANT_NAME={pierce:"Piercing",direct:"Phantom Strike",guard:"Stalwart",double:"Double Sprint",battleBurn:"Battle Burn"};
-const GRANT_TXT={pierce:"Piercing (deals damage to Defense Position monsters)",direct:"Phantom Strike (can attack directly)",guard:"Stalwart (survives its first battle destruction)",double:"Double Sprint (can attack twice)"};
+const GRANT_NAME={pierce:"Piercing",direct:"Phantom Strike",guard:"Stalwart",double:"Double Sprint",battleBurn:"Battle Burn",kijin:"Kijin"};
+const GRANT_TXT={pierce:"Piercing (deals damage to Defense Position monsters)",direct:"Phantom Strike (can attack directly)",guard:"Stalwart (survives its first battle destruction)",double:"Double Sprint (can attack twice)",kijin:"Kijin (once per turn, after a battle destroy or battle damage, send 1 card from the opponent's hand or field to the Graveyard)"};
 const baseFxPhrase=fxPhrase;
 fxPhrase=function(e){if(e&&!Array.isArray(e)){if(e.k==="searchEquip")return "add 1 Equip Spell from your Deck to your hand";if(e.k==="cakeBurn")return `inflict ${e.v} damage to your opponent (${e.hi} instead if you have ${e.need} or more LP)`;}return baseFxPhrase.apply(this,arguments);};
 const baseCardText=cardText;
