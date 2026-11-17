@@ -1719,8 +1719,8 @@ async function playClip(key,label){const vok=await videoReady();
     const p=v.play();if(p&&p.catch)p.catch(()=>{v.muted=true;v.play().catch(()=>{});});
     tm=setTimeout(()=>fin(true),9000);
     const chk=setInterval(()=>{if(done){clearInterval(chk);return;}if(gid!==GID){clearInterval(chk);fin(false);}},200);});}
-async function aceClip(s){if(!V3.clips||!G||SPEED<0.5)return;const key=clipKey("ace",s);if(V3.clipSeen[key])return;V3.clipSeen[key]=1;
-  await playClip(key,`${S(s).name.toUpperCase()} CALLS THE ACE!`);}
+async function aceClip(s,card){if(!V3.clips||!G||SPEED<0.5)return;const spec=card&&window.ACE_CLIP&&ACE_CLIP[card.id];const key=spec||clipKey("ace",s);if(V3.clipSeen[key])return;V3.clipSeen[key]=1;
+  await playClip(key,`${(card&&card.name?card.name:S(s).name).toUpperCase()}`);}
 function winVideoHTML(wch){const img=CHARS[wch].img,key="win_"+img;const still=EXPR_BAD[img+"_win"]?PORTRAITS[img]:exprSrc(img,"win");
   if(CLIP_BAD[key]||!V3.clips||VID.state!=="ok")return `<img src="${still}" alt="" onerror="this.src=PORTRAITS['${img}']">`;
   return `<img class="opstill" src="${still}" alt="" onerror="this.src=PORTRAITS['${img}']"><video class="opvid" autoplay playsinline preload="auto" poster="${posterSrc(key)}" src="${ASSET}video/${key}.mp4" title="Click to skip"></video>`;}
@@ -2611,7 +2611,7 @@ function themeFX(race,L){
     for(let i=0;i<50;i++)part(L,pick(["✨","⭐","💖","✦"]),{left:rnd(150,1130)+"px",top:rnd(60,740)+"px",fontSize:rnd(14,34)+"px",color:"#fff"},[{opacity:0,transform:"scale(0)"},{opacity:1,transform:"scale(1.3)",offset:.4},{opacity:0,transform:"scale(.3)"}],rnd(500,1100),rnd(200,2200));
   }}
 async function entrance(card,s){
-  G.stats.aces++;exprSet(s,"point",2600);await aceClip(s);if(!G||G.over)return;
+  G.stats.aces++;exprSet(s,"point",2600);await aceClip(s,card);if(!G||G.over)return;
   const L0=$("#cine");const col=THEME_COL[card.race]||"#ffd36b";
   L0.innerHTML=`<div class="dark"></div><div class="layer" id="cinefx"></div>
     <div class="hero a-${card.attr}" style="--g:${col}">${ART_BAD[card.id]?"":`<img class="heroimg" src="${artSrc(card.id)}" alt="" onerror="artErr(this,'${card.id}')">`}</div>
@@ -3018,7 +3018,7 @@ function requestChoice(side,options,opts){opts=opts||{};const list=(options||[])
     const wrap=document.createElement("div");wrap.className="modal-bg chooser-bg";
     wrap.innerHTML=`<div class="modal chooser" id="chooser"><h2>${opts.title||"Choose a card"}</h2>${opts.sub?`<p class="chsub">${opts.sub}</p>`:""}
       <div class="chbody"><div class="chgrid">${list.map((o,i)=>`<div class="chopt" data-i="${i}"><div class="cc">${cardHTML(o.card,{hidden:!!o.hidden,noUid:true})}</div>
-        <div class="cn">${o.hidden?"Set card":`<b>${o.card.name}</b><br><span>${stat(o.card)}</span>`}${o.note&&!o.hidden?`<br><i>${o.note}</i>`:""}</div></div>`).join("")}</div>
+        <div class="cn">${window.choiceBadge?choiceBadge(o):""}${o.hidden?"Set card":`<b>${o.card.name}</b><br><span>${stat(o.card)}</span>`}${o.note&&!o.hidden?`<br><i>${o.note}</i>`:""}</div></div>`).join("")}</div>
       <div class="chpv" id="chpv">${prevHTML(list[0])}</div></div>
       <div class="btnrow"><button class="btn gold" id="ch-ok" disabled>${opts.confirmLabel||"Confirm"}</button>${opts.optional?`<button class="btn" id="ch-no">${opts.cancelLabel||"Don't use"}</button>`:""}</div></div>`;
     ($("#modalLayer")||document.body).appendChild(wrap);
@@ -3177,8 +3177,8 @@ activateSpell=async function(s,uid,targetUid,ctx,pref){
       if(cos.fx.onEquip&&!G.over){log(`${cos.name}'s effect activates!`,sc(s));await resolveFx(s,cos.fx.onEquip,cos);}}}
   return r;};
 /* ---------- text ---------- */
-const GRANT_NAME={pierce:"Piercing",direct:"Phantom Strike",guard:"Stalwart",double:"Double Sprint",battleBurn:"Battle Burn",kijin:"Kijin"};
-const GRANT_TXT={pierce:"Piercing (deals damage to Defense Position monsters)",direct:"Phantom Strike (can attack directly)",guard:"Stalwart (survives its first battle destruction)",double:"Double Sprint (can attack twice)",kijin:"Kijin (once per turn, after a battle destroy or battle damage, send 1 card from the opponent's hand or field to the Graveyard)"};
+const GRANT_NAME={pierce:"Piercing",direct:"Phantom Strike",guard:"Stalwart",double:"Double Sprint",battleBurn:"Battle Burn",kijin:"Kijin",angel:"Angel Guard",burn:"Dragon Fire"};
+const GRANT_TXT={pierce:"Piercing (deals damage to Defense Position monsters)",direct:"Phantom Strike (can attack directly)",guard:"Stalwart (survives its first battle destruction)",double:"Double Sprint (can attack twice)",kijin:"Kijin (once per turn, after a battle destroy or battle damage, send 1 card from the opponent's hand or field to the Graveyard)",angel:"Angel Guard (once per turn it is not destroyed; while equipped, the opponent can only attack this monster)",burn:"Dragon Fire (once per turn, 400 damage)"};
 const baseFxPhrase=fxPhrase;
 fxPhrase=function(e){if(e&&!Array.isArray(e)){if(e.k==="searchEquip")return "add 1 Equip Spell from your Deck to your hand";if(e.k==="cakeBurn")return `inflict ${e.v} damage to your opponent (${e.hi} instead if you have ${e.need} or more LP)`;}return baseFxPhrase.apply(this,arguments);};
 const baseCardText=cardText;
@@ -5909,7 +5909,7 @@ function targetPanel(){const tp=$("#tagtp");const t=T();if(!tp||!t)return;
   const af=find(G.ui.attUid);if(!af){tp.classList.remove("on");return;}const att=af.card;const me=t.seats[t.turnSeat];const ow=t.seats[att.seat]||me;
   const o=other(me.team);const A2=atkOf(att);
   let h=`<span class="tpx" data-tpcancel="1">✕</span><h4>⚔ CHOOSE ATTACK TARGET</h4><div class="sub">${esc(att.name)} · ATK ${A2} <span class="ownt" style="--oc:${col(ow)}">owner: ${esc(ow.name)}</span></div>`;
-  for(const m of mons(o)){const st=t.seats[m.seat]||A().teamSeats(o)[0];if(!st)continue;const sn=`<span class="ow" style="color:${col(st)}">${esc(st.name)}'s</span>`;
+  for(const m of mons(o)){if(window.angelGuardTargets){const lk=angelGuardTargets(o);if(lk.length&&!lk.some(x=>x.uid===m.uid))continue;}const st=t.seats[m.seat]||A().teamSeats(o)[0];if(!st)continue;const sn=`<span class="ow" style="color:${col(st)}">${esc(st.name)}'s</span>`;
     if(!m.faceUp){h+=`<div class="opt" data-tpatk="${m.uid}"><div class="tpc">${cardHTML({},{hidden:true,noUid:true})}</div><div><b>Set monster (DEF)</b> ${sn}<br>Face-down · unknown DEF</div></div>`;continue;}
     const r=previewBattle(att,m);let out=[];
     out.push(`${m.pos==="atk"?"ATK "+atkOf(m):"DEF "+m.def}`);
@@ -8198,4 +8198,5 @@ window.__adcTag={create:(name,code)=>tnCreate(name||"Host",code||null),join:(cod
 </script>
 <script src="assets/js/james2.js"></script>
 <script src="assets/js/story-mode.js"></script>
+<script src="assets/js/duel-fixes.js"></script>
 </body></html>

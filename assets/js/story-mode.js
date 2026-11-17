@@ -800,10 +800,18 @@ function startBw1(){
   renderStory();
   showScreen("story");
 }
+/* Chapter 1 only. Sabrina's full deck stays the default everywhere else. */
+const SABRINA_STORY_DECK={
+  sb_bun:3,sb_teddy:3,sb_ninja:2,sb_knight:2,sb_dino:2,sb_star:2,sb_robo:2,
+  sb_princess:1,
+  sb_party:2,sb_toybox:1,sb_hug:1,sb_candy:2,
+  x_mend:2,x_veil:1,x_seal:1,x_oracle:1,x_thorn:1,x_gust:1
+};
+window.SABRINA_STORY_DECK=SABRINA_STORY_DECK;
 function beginSabrinaDuel(id){
   const p=id||protagonist();
   if(typeof startDuel!=="function"){try{toast("Could not start the duel.");}catch(e){}return;}
-  startDuel(p,"sabrina",{storyChapter:"bw1",first:"player",arena:"toy_town"});
+  startDuel(p,"sabrina",{storyChapter:"bw1",first:"player",arena:"toy_town",decks:{enemy:SABRINA_STORY_DECK}});
 }
 function showSabrinaLoss(){
   const layer=document.getElementById("modalLayer");
@@ -1056,7 +1064,8 @@ if(typeof startDuel==="function"){
     const r=prev.apply(this,arguments);
     if(opts&&typeof G!=="undefined"&&G){
       if(opts.storyTutorial){G.storyTutorial=true;G.aiDiff="easy";}
-      if(opts.storyChapter){G.storyChapter=opts.storyChapter;if(!opts.storyTutorial)G.aiDiff="normal";}
+      if(opts.storyChapter){G.storyChapter=opts.storyChapter;if(!opts.storyTutorial)G.aiDiff=opts.storyChapter==="bw1"?"easy":"normal";}
+      if(opts.storyChapter==="bw1"&&G.sides&&G.sides.enemy){G.sides.enemy.lp=5000;render();}
     }
     return r;
   };
