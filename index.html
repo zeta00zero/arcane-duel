@@ -1152,23 +1152,23 @@ Q("hf_tapau","hisyam","Tapau to Go",{k:"qBounce"},"Packed up and sent home. Than
 // ---------- WEI YAO - THE 2ND COMING: Gallop Idol (horse-eared racing idol girls) ----------
 const GI="Gallop Idol";
 M("wz_foal","weiyao2","Gallop Idol Trainee Foalie",2,"EARTH",GI,700,600,"",{onDestroy:{k:"ssDeck",race:GI,maxLv:4}},"She trips at the gate, and her senpai takes the lane.");
-M("wz_pace","weiyao2","Gallop Idol Pacemaker Mitsuki",3,"WIND",GI,1100,1200,"",{onSummon:{k:"ssHand",race:GI,maxLv:3}},"She sets the pace, then waves her teammate through.");
-M("wz_sprint","weiyao2","Gallop Idol Sprinter Kirara",3,"WIND",GI,1200,900,"",{direct:true},"Out of the gate like a shooting star, straight past the defence.");
-M("wz_stayer","weiyao2","Gallop Idol Stayer Rindou",4,"EARTH",GI,1300,1900,"",{guard:true},"Three thousand metres and she still has breath to sing.");
-M("wz_closer","weiyao2","Gallop Idol Last-Spurt Kohaku",4,"FIRE",GI,1800,1000,"",{pierce:true},"Dead last at the final turn. First at the line.");
-M("wz_step","weiyao2","Gallop Idol Double-Step Nanami",4,"WIND",GI,1500,1000,"",{double:true},"Two strides for every one of yours.");
-M("wz_cheer","weiyao2","Gallop Idol Paddock Cheerleader Mone",4,"LIGHT",GI,1400,1300,"",{aura:{race:GI,atk:300}},"Her paddock cheer gets every runner's ears up.");
-M("wz_singer","weiyao2","Gallop Idol Winning-Live Singer Aoi",4,"LIGHT",GI,1500,1300,"",{onSummon:{k:"heal",v:600}},"Win the race, then sing for the crowd. That's the rule.");
-M("wz_gate","weiyao2","Gallop Idol Gate-Breaker Hinata",4,"FIRE",GI,1600,1100,"",{onSummon:{k:"destroyST"}},"The starting gate opens. So does your back row.");
-M("wz_rival","weiyao2","Gallop Idol Rival Ace Sorane",5,"WATER",GI,2100,1600,"",{onSummon:{k:"ssGY",race:GI,maxLv:4}},"Rivals on the track, best friends at the encore.");
-M("wz_crown","weiyao2","Gallop Idol Crown Hopeful Reika",6,"LIGHT",GI,2400,1900,"",{onSummon:{k:"destroyMon",maxAtk:1800}},"Three great races, three crowns. She wants them all.");
-M("wz_unit","weiyao2","Gallop Idol Grand Prix Unit Aurelia",7,"LIGHT",GI,2600,2100,"",{onSummon:{k:"ssGY",race:GI,maxLv:4},guard:true},"The gold-silk unit that headlines every Grand Prix concert.",true);
-M("wz_ace","weiyao2","Hoshina, Prism Derby Champion",8,"LIGHT",GI,2900,2400,"",{onSummon:{k:"destroyMon"},auraPer:{race:GI,atk:200}},"After every loss, she kept running. Now Wei Yao's centre idol races in prism silks.",true);
-SP("wz_live","weiyao2","Winning Live Concert","Continuous","",{k:"cont",race:GI,atk:300},"The race is over. The real show begins.");
-SP("wz_comeback","weiyao2","Second-Coming Comeback","Normal","",{k:"revive",race:GI},"Everyone counted them out. That was the mistake.");
-TR("wz_photo","weiyao2","Photo Finish!","",{k:"negate",needRace:GI},"Hold on, hold on... the judges need to see the replay.");
-Q("wz_spurt","weiyao2","Final Furlong Spurt",{k:"qBoost",v:1000,race:GI},"Ears back, eyes forward, everything left in the tank.");
-Q("wz_restart","weiyao2","Gate Restart",{k:"qBounce"},"False start! Everyone back to the gate.");
+M("wz_pace","weiyao2","Gallop Idol Pacemaker Mitsuki",3,"WIND",GI,1100,1200,"",{onSummon:{k:"ssHand",race:GI,maxLv:3},onAttack:{v:500}},"She sets the pace, then finds another length when she charges.");
+M("wz_sprint","weiyao2","Gallop Idol Sprinter Kirara",3,"WIND",GI,1200,900,"",{onAttack:{v:800}},"Out of the gate she is ordinary. Down the stretch she is not.");
+M("wz_stayer","weiyao2","Gallop Idol Stayer Rindou",4,"EARTH",GI,1300,1900,"",{onAttack:{v:800,safe:true}},"Three thousand metres, and she still will not fall.");
+M("wz_closer","weiyao2","Gallop Idol Last-Spurt Kohaku",4,"FIRE",GI,1800,1000,"",{pierce:true,onAttack:{v:500}},"Dead last at the final turn. First at the line.");
+M("wz_step","weiyao2","Gallop Idol Double-Step Nanami",4,"WIND",GI,1500,1000,"",{double:true,onAttack:{v:400}},"Two strides for every one of yours, and each one is faster.");
+M("wz_cheer","weiyao2","Gallop Idol Paddock Cheerleader Mone",4,"LIGHT",GI,1400,1300,"",{rally:{race:GI,v:400}},"When a friend starts her spurt, Mone's cheer is worth another length.");
+M("wz_singer","weiyao2","Gallop Idol Winning-Live Singer Aoi",4,"LIGHT",GI,1500,1300,"",{onAttack:{v:600}},"She sings on the charge, and the crowd pushes her forward.");
+M("wz_gate","weiyao2","Gallop Idol Gate-Breaker Hinata",4,"FIRE",GI,1600,1100,"",{onAttack:{v:600,ifST:400}},"A crowded backstretch only makes her faster.");
+M("wz_rival","weiyao2","Gallop Idol Rival Ace Sorane",5,"WATER",GI,2100,1600,"",{onSummon:{k:"ssGY",race:GI,maxLv:4},onAttack:{v:400}},"Rivals on the track, best friends at the encore.");
+M("wz_crown","weiyao2","Gallop Idol Crown Hopeful Reika",6,"LIGHT",GI,2400,1900,"",{onAttack:{v:400,catchup:800}},"If someone is ahead of her, she finds the speed to catch them.");
+M("wz_unit","weiyao2","Gallop Idol Grand Prix Unit Aurelia",7,"LIGHT",GI,2600,2100,"",{onAttack:{v:500,team:300}},"When Aurelia kicks, the whole unit surges with her.",true);
+M("wz_ace","weiyao2","Hoshina, Prism Derby Champion",8,"LIGHT",GI,2900,2400,"",{onAttack:{each:400,per:GI}},"The more of her unit runs with her, the faster the last spurt.",true);
+SP("wz_live","weiyao2","Winning Live Concert","Continuous","",{k:"contAtk",race:GI,atk:300},"The lights hit, and every runner finds one more length.");
+SP("wz_comeback","weiyao2","Second-Coming Comeback","Normal","",{k:"revive",race:GI,thenAtk:400},"Everyone counted them out. They come back already at a gallop.");
+TR("wz_photo","weiyao2","Photo Finish!","",{k:"giGuard",v:700,needRace:GI},"Hold on — the photo says she held the line.");
+Q("wz_spurt","weiyao2","Final Furlong Spurt",{k:"qDirect",v:600,race:GI,maxLv:4},"A young runner puts her ears back and goes straight for the line.");
+Q("wz_restart","weiyao2","Gate Restart",{k:"qAgain",race:GI},"False start on purpose. She takes the lane a second time.");
 
 /* ---------- characters ---------- */
 const NEW5B={
@@ -1195,7 +1195,7 @@ const NEW5B={
   weiyao2:{name:"Wei Yao - The 2nd Coming",img:"weiyao2",race:GI,color:"#e9b949",theme:"Gallop Idol: horse idol racers, turf & winning-live concerts",home:"derby_dome",
     bio:"Wei Yao lost one time too many. Instead of quitting, he forged a suit of golden plate armour and took his idols to the racetrack. His centre idol Hoshina evolved into a horse-eared racing idol, and now his Gallop Idols win the race first and sing the encore after.",
     quote:"I lost a hundred times. This is the 2nd coming. Start the race!",
-    personality:"Speed and showmanship: Gallop Idols attack twice, pierce and sprint past defenders, revive each other with Rival Ace Sorane and Grand Prix Unit Aurelia, and grow stronger together under Hoshina, Prism Derby Champion. Proud, theatrical, and much harder to beat than before.",
+    personality:"Stretch fighters: most Gallop Idols gain ATK when they declare an attack. Pacemaker Mitsuki and Rival Ace Sorane still call teammates onto the track, Winning Live and Final Furlong push the charge, and Photo Finish keeps a runner from falling. Proud, theatrical, and built to win the stretch rather than the starting gate.",
     lines:{start:["The gates are open. It's the 2nd coming!","Front row seats again. This time I win."],summon:["Into the starting gate!","Ears up, run your best!","Next runner, take the turf!"],ace:["Prism silks, golden track: Hoshina, Prism Derby Champion!","Grand Prix Unit Aurelia, take the stage!"],attack:["Final spurt!","Down the stretch!","Gallop!"],trap:["Photo finish! Check the replay!"],hurt:["This armour has taken worse!"],win:["First place AND the encore! Thank you, everyone!"],lose:["Not again... no. There will be a 3rd coming."]}}
 };
 for(const k in NEW5B)CHARS[k]=NEW5B[k];
@@ -2094,6 +2094,7 @@ async function attack(s,attUid,tgtUid){
       if(k==="shrink"){addTemp(att,choice.fx.v);floatText(elOf(att.uid),`-${choice.fx.v} ATK`,"dmg");render();await sleep(300);}
       if(k==="burnBack"){await changeLP(s,-choice.fx.v);}
       if(window.jbTrapEffect)await jbTrapEffect(k,o,s,att,tgt,choice);
+      if(window.gallopTrap)await gallopTrap(k,o,s,att,tgt,choice);
     }}
   const ac=find(att.uid);if(!ac||ac.zone!=="monsters")return;
   const attEl=elOf(att.uid),tgtEl=tgt?elOf(tgt.uid):$("#duel-"+o);
@@ -8200,4 +8201,5 @@ window.__adcTag={create:(name,code)=>tnCreate(name||"Host",code||null),join:(cod
 <script src="assets/js/fullscreen.js"></script>
 <script src="assets/js/story-mode.js"></script>
 <script src="assets/js/duel-fixes.js"></script>
+<script src="assets/js/gallop.js"></script>
 </body></html>
