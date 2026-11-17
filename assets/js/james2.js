@@ -64,7 +64,7 @@ SP("jb_red","james2","Red Oni Sword Armour","Equip","",{k:"equip",v:500,race:R,g
 SP("jb_blue","james2","Blue Turtle Spear Armour","Equip","",{k:"equip",v:200,race:R,grant:{pierce:true}},"A turtle spear. The point goes through a shield.");
 SP("jb_yellow","james2","Yellow Kijin Axe Armour","Equip","",{k:"equip",v:700,race:R,grant:{kijin:true}},"A kijin axe. One clean hit, and another card leaves.");
 SP("jb_gun","james2","Purple Dragon Gun Armour","Equip","",{k:"equip",v:300,race:R,grant:{burn:400}},"A dragon barrel. Once per turn it breathes fire.");
-SP("jb_angel","james2","Gold Angel Dagger","Equip","",{k:"equip",v:300,race:R,grant:{angel:true}},"A golden dagger. Once per turn it refuses to break.");
+SP("jb_angel","james2","Gold Angel Dagger","Equip","",{k:"equip",v:300,race:R,grant:{angel:true}},"A golden dagger. It refuses to break, and every blow is drawn to the one who wears it.");
 SP("jb_climax","james2","Climax Form","Normal","",{k:"climax"},"The five armours leave the field, the hand and the deck. The rider takes every form at once.");
 TR("jb_guard","james2","Mask Lock","",{k:"negate",needRace:R},"The mask holds. That attack never lands.");
 TR("jb_swap","james2","Form Change","",{k:"jbSwap",needRace:R},"Mid-fight, the armour comes off and a different one locks on.");
@@ -75,13 +75,13 @@ const BLURB={
   jb_boy:"Once per turn: add 1 Rider Warrior from your Deck or Graveyard to your hand.",
   jb_wall:"Equip Spells cannot be equipped to this card. Once per turn: add 1 Equip Spell from your Graveyard to your hand.",
   jb_wing:"Unaffected by other card effects. During the End Phase of your next turn, send this card to the Graveyard. Once per duel: destroy all monsters your opponent controls. It cannot attack the turn it uses this effect.",
-  jb_liner:"Stays only for the turn it is summoned. Once per duel: equip Red Oni Sword Armour, Blue Turtle Spear Armour, Yellow Kijin Axe Armour, Purple Dragon Gun Armour and Gold Angel Dagger from your hand, Deck and/or Graveyard at the same time. The one-equip rule is lifted for this card this turn, and all of their boosts and effects apply together, including Yellow Kijin Axe Armour's once-per-turn send. At the end of that turn, shuffle every card on your field and your banished cards into your Deck, then draw 3. Your opponent's field is not affected.",
+  jb_liner:"Stays only for the turn it is summoned. Once per duel: equip Red Oni Sword Armour, Blue Turtle Spear Armour, Yellow Kijin Axe Armour, Purple Dragon Gun Armour and Gold Angel Dagger from your hand, Deck and/or Graveyard at the same time. The one-equip rule is lifted for this card this turn, and all of their boosts and effects apply together, including Yellow Kijin Axe Armour's once-per-turn send and Gold Angel Dagger's attack lock. At the end of that turn, shuffle every card on your field and your banished cards into your Deck, then draw 3. Your opponent's field is not affected.",
   jb_climax:"Send Red Oni Sword Armour, Blue Turtle Spear Armour, Yellow Kijin Axe Armour, Purple Dragon Gun Armour and Gold Angel Dagger from your hand, Deck and/or field to the Graveyard, and Rider Warrior must be face-up on your field. Special Summon Rider Warrior The Climax Golden Wing Mode. "+ONE,
   jb_red:"Equip to a Maskbike, except Train Liner Dasher. It gains 500 ATK and can attack twice. "+ONE,
   jb_blue:"Equip to a Maskbike, except Train Liner Dasher. It gains 200 ATK and pierces. "+ONE,
   jb_yellow:"Equip to a Maskbike, except Train Liner Dasher. It gains 700 ATK. Once per turn, if the equipped monster destroys an opponent's monster by battle or deals battle damage to your opponent: send 1 card from the opponent's hand or field to the Graveyard. You choose the zone. You choose the card on the field; a card from the hand is random. "+ONE,
   jb_gun:"Equip to a Maskbike, except Train Liner Dasher. It gains 300 ATK. Once per turn: inflict 400 damage. "+ONE,
-  jb_angel:"Equip to a Maskbike, except Train Liner Dasher. It gains 300 ATK. Once per turn, the first time it would be destroyed, it is not. "+ONE,
+  jb_angel:"Equip to a Maskbike, except Train Liner Dasher. It gains 300 ATK. Once per turn, the first time it would be destroyed, it is not. While this card is face-up, your opponent's monsters can only attack the monster equipped with this card. "+ONE,
   jb_guard:"If you control a Maskbike: negate the attack and end the Battle Phase.",
   jb_swap:"If you control a Maskbike: send its Equip Spell to the Graveyard and equip a different Equip Spell from your Deck.",
   jb_veil:"If you control a Maskbike: the attacking monster loses 800 ATK this turn."
@@ -102,7 +102,7 @@ try{if(typeof CLIP_BAD!=="undefined")CLIP_BAD.win_james2=1;
 CHARS.james2={name:"James The Mask Bike Warrior",img:"james2",race:R,color:"#3ec6ff",theme:"Maskbike: one rider, one armour, a climax of every form",home:"stadium",
   bio:"James pulls a second mask on. The leather jacket stays, but the visor is a bike helm edged in gold, and every Equip Spell is a different armour. Only one form can be worn at a time. Five of them together are the Climax. Once a duel, the three riders banish themselves and the liner takes the road.",
   quote:"One mask. One armour. Don't stack them.",
-  personality:"Search the armour, wear exactly one, and build toward Climax Form. Once per duel, at 4000 LP or less, banish Rider Warrior, Masked Boy and Train Liner Dasher to summon Liner Form, wear all five armours, and attack. At the end of that turn only your own field and your banished cards return to your Deck, then you draw 3. Do not spend the skill while Golden Wing Mode is on the field. Laid-back, then sudden.",
+  personality:"Search the armour, wear exactly one, and build toward Climax Form. Once per duel, at 3000 LP or less, banish Rider Warrior, Masked Boy and Train Liner Dasher to summon Liner Form, wear all five armours, and attack. At the end of that turn only your own field and your banished cards return to your Deck, then you draw 3. Do not spend the skill while Golden Wing Mode is on the field. Laid-back, then sudden.",
   lines:{start:["Helmet on. One armour only.","Right. Mask bike, let's ride."],summon:["Form up.","New armour, lock in.","Masked and moving."],ace:["Liner Form!","Climax Form — Golden Wing Mode!","Every armour, one rider!"],attack:["Slash!","Through!","Coming past!"],trap:["Form change!"],hurt:["The plating took that."],win:["Parked it. Cheers."],lose:["...Helmet off. Next lap."]}};
 if(typeof CHAR_ORDER!=="undefined"&&CHAR_ORDER.indexOf("james2")<0){
   const j=CHAR_ORDER.indexOf("james");
@@ -182,7 +182,7 @@ async function ignite(s,m){
   }
   return false;
 }
-function igniteReady(m){
+function monsterIgniteReady(m){
   if(!m||!m.faceUp||!G)return false;
   const sd=S(m.owner);
   if(m.jbOpt!==G.turn&&m.fx.ignite==="swap")return equipsIn(sd,"hand").length>0&&sd.deck.some(c=>isEquip(c));
@@ -190,13 +190,42 @@ function igniteReady(m){
   if(m.jbOpt!==G.turn&&m.fx.ignite==="fetchEquip")return equipsIn(sd,"gy").length>0;
   if(m.jbOpt!==G.turn&&m.fx.ignite==="wipe")return !sd.jbWiped&&mons(other(m.owner)).some(x=>!x.unaffected);
   if(m.id==="jb_liner"&&!sd.jbGeared)return ARMOUR.some(id=>sd.hand.some(c=>c.id===id)||sd.deck.some(c=>c.id===id)||sd.gy.some(c=>c.id===id)||equipsOn(m).some(e=>e.id===id));
-  if(equipsOn(m).some(e=>e.id==="jb_gun"&&e.jbBurn!==G.turn))return true;
   return false;
 }
+function gunReady(spell){
+  if(!spell||spell.id!=="jb_gun"||!spell.faceUp||spell.jbBurn===G.turn||!spell.equippedTo)return false;
+  const host=find(spell.equippedTo);
+  return !!(host&&host.zone==="monsters"&&host.card&&host.card.faceUp);
+}
+function igniteReady(m){
+  return monsterIgniteReady(m)||equipsOn(m).some(e=>e.id==="jb_gun"&&e.jbBurn!==G.turn);
+}
+async function gunBurn(s,gun){
+  if(!gunReady(gun))return false;
+  gun.jbBurn=G.turn;
+  say(s,"Purple Dragon Gun Armour breathes fire.");
+  await changeLP(other(s),-400);
+  return true;
+}
+window.monsterIgniteReady=monsterIgniteReady;
 window.jbIgnite=ignite;
 window.jbIgniteItem=function(c){
-  if(!c||!igniteReady(c))return null;
-  return {label:"✦ Activate effect",cls:"gold",fn:()=>act(()=>ignite("player",c))};
+  if(!c||!monsterIgniteReady(c))return null;
+  return {label:"✦ Activate effect",cls:"gold",fn:()=>act(()=>window.playCardEffect("player",c.uid))};
+};
+window.spellEffectItem=function(c){
+  if(!gunReady(c))return null;
+  return {label:"✦ Activate effect",cls:"gold",fn:()=>act(()=>window.playCardEffect("player",c.uid))};
+};
+window.jbPlayEffect=async function(s,uid){
+  const f=find(uid);if(!f||!f.card)return false;
+  if(f.card.id==="jb_gun")return gunBurn(s,f.card);
+  if(f.card.type==="monster")return ignite(s,f.card);
+  return false;
+};
+window.angelGuardTargets=function(side){
+  if(!G||!side)return [];
+  return mons(side).filter(m=>equipsOn(m).some(e=>e.faceUp&&e.fx&&e.fx.grant&&e.fx.grant.angel));
 };
 
 function climaxOk(s){
@@ -624,7 +653,8 @@ async function linerSkill(s){
 if(typeof LINKS!=="undefined"){
   LINKS.james2={
     name:"Liner Form",
-    text:"Once per duel, while your LP is 4000 or less: banish Rider Warrior, Masked Boy and Train Liner Dasher from your hand, Deck, field and/or Graveyard, and Special Summon Rider Warrior Liner Form. It stays this turn only. Once per duel: equip it with all 5 armour Equip Spells at once. Their boosts and effects apply together, including Yellow Kijin Axe Armour's once-per-turn send. At the end of this turn, shuffle every card on your field and your banished cards into your Deck, then draw 3. Your opponent's field is not affected.",
+    lp:3000,
+    text:"Once per duel, while your LP is 3000 or less: banish Rider Warrior, Masked Boy and Train Liner Dasher from your hand, Deck, field and/or Graveyard, and Special Summon Rider Warrior Liner Form. It stays this turn only. Once per duel: equip it with all 5 armour Equip Spells at once. Their boosts and effects apply together, including Yellow Kijin Axe Armour's once-per-turn send and Gold Angel Dagger's attack lock. At the end of this turn, shuffle every card on your field and your banished cards into your Deck, then draw 3. Your opponent's field is not affected.",
     can:s=>!!chooseMats(s),
     ai:(s,ph)=>{
       if(ph===2)return 0;
@@ -638,5 +668,21 @@ if(typeof LINKS!=="undefined"){
   };
 }
 if(typeof LINK_PARAMS!=="undefined")LINK_PARAMS.james2={draw:3};
+window.ACE_CLIP=window.ACE_CLIP||{};
+ACE_CLIP.jb_wing="ace_jb_wing";
+ACE_CLIP.jb_liner="ace_jb_liner";
+if(typeof themeFX==="function"){
+  const prevFX=themeFX;
+  themeFX=function(race,L){
+    if(race==="Maskbike"){
+      part(L,"",{left:"0",top:"0",width:"1280px",height:"800px",background:"linear-gradient(90deg,rgba(0,20,40,.2),rgba(180,255,255,.35),rgba(0,20,40,.2))"},[{opacity:0},{opacity:1,offset:.2},{opacity:0}],700,0);
+      for(let i=0;i<28;i++)part(L,"",{left:"-200px",top:rnd(40,760)+"px",width:rnd(280,640)+"px",height:rnd(3,8)+"px",background:"linear-gradient(90deg,transparent,#e8fbff,#3ec6ff)",boxShadow:"0 0 12px #7ef"},[{transform:"translateX(0)",opacity:0},{opacity:1,offset:.15},{transform:"translateX(1600px)",opacity:0}],rnd(380,700),rnd(0,1600),{easing:"linear"});
+      for(let i=0;i<18;i++)part(L,"",{left:rnd(200,1000)+"px",top:rnd(80,640)+"px",width:"14px",height:"14px",borderRadius:"50%",background:"#ffd36b",boxShadow:"0 0 16px #ffd36b"},[{opacity:0,transform:"scale(.2)"},{opacity:1,transform:"scale(1.4)",offset:.4},{opacity:0,transform:"scale(.4)"}],rnd(500,900),rnd(200,1400));
+      part(L,"",{left:"0",top:"0",width:"1280px",height:"800px",background:"#fff"},[{opacity:0},{opacity:.7,offset:.15},{opacity:0}],420,80);
+      return;
+    }
+    return prevFX.apply(this,arguments);
+  };
+}
 window.JB_ART=ART;
 })();
