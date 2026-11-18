@@ -9,11 +9,21 @@ Open `index.html` through any static web server (GitHub Pages works as-is). For 
 | Move (left/right + depth up/down) | Arrow keys or WASD |
 | Light attack | J |
 | Heavy attack | K |
+| Jump (J = jump kick, K = dive / ground pound in the air) | Space |
+| Dash / dodge (invulnerable burst, cancels attack recovery) | Shift |
 | Ultimate (when the Song Meter is full) | L |
 | Pause | P or Esc |
 | Menus / dialogue | Mouse/touch, or arrows + Enter (or J). Esc/K = back, Esc = skip |
 
-Combos: J-J-J, J-J-K (finisher), K-K (kick into a launcher; juggle with more hits).
+Combos (data in `js/data/characters.js` -> `moves` / `chain`):
+- J-J-J, J-J-K (heavy finisher), K-K (launcher)
+- J-J-J-K: Rush finisher (multi-hit flurry + big kick)
+- J-K-K: Rising follow-up (knee launch, then a hopping uppercut)
+- Dash + J: Dash strike, Dash + K: Shoulder charge
+- Air J: Jump kick, Air K: Dive (shockwave on landing)
+
+Health drops: defeated Noisy may drop a music-note heart (small +20% HP, rare big +50%), the boss always drops a big one.
+Walk over it to collect; it blinks and vanishes after 10 s. Drop tables: `stage.drops` in `js/data/missions.js`, item types: `SOTS_DATA.items`.
 
 ## Replace these placeholder files with your real ones (keep the same filename)
 | File | What it is |

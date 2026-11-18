@@ -27,6 +27,13 @@ SOTS_DATA.missions = [
           ],
           shadow: 0.5, rim: 'rgba(16,20,40,0.85)'
         },   // daytime city, 3 layers built by tools/build_bg3.py
+      // health drops per enemy type: rolled in order, first hit wins (chance 1 = guaranteed).
+      // item types are in SOTS_DATA.items (below): small = +20% HP, big = +50% HP.
+      drops: {
+        noisy: [ { item: 'big', chance: 0.05 }, { item: 'small', chance: 0.20 } ],
+        blob:  [ { item: 'big', chance: 0.05 }, { item: 'small', chance: 0.20 } ],
+        boss:  [ { item: 'big', chance: 1 } ]
+      },
       length: 5600,
       laneTop: 520, laneBottom: 700,
       waves: [
@@ -38,3 +45,12 @@ SOTS_DATA.missions = [
     }
   }
 ];
+
+// ============================================================
+//  PICKUP ITEMS (health drops). heal = fraction of max HP.
+// ============================================================
+SOTS_DATA.items = {
+  small: { heal: 0.20, size: 1,   color: '#ff6a8a', glow: '#ffd0dc', label: '+20%' },
+  big:   { heal: 0.50, size: 1.5, color: '#ffd36a', glow: '#fff3b0', label: '+50%' },
+  life: 600, blinkAt: 150          // ticks on the ground (10 s), blinks for the last 2.5 s
+};

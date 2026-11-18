@@ -25,7 +25,12 @@ SOTS_DATA.characters = {
     anims: {
       idle:    { sprite: 'transformed', frames: ['idle0', 'idle1', 'idle2', 'idle3'], durs: [16, 12, 16, 12], loop: true },
       // run cycle: 8 frames = 2 steps (run0-3 left leg lands / right leg pushes off and swings, run4-7 swapped). ~38 sheet px of ground per frame.
-      walk:    { sprite: 'transformed', frames: ['run0', 'run1', 'run2', 'run3', 'run4', 'run5', 'run6', 'run7'], stride: 300, loop: true },
+      // sprint: contact, down (mid-stance), push-off, flight x2 per step; dists = planted-foot travel per frame (sheet px)
+      walk:    { sprite: 'transformed', frames: ['sprint0', 'sprint1', 'sprint2', 'sprint3', 'sprint4', 'sprint5', 'sprint6', 'sprint7', 'sprint8', 'sprint9'],
+                 stride: 360, dists: [55, 45, 30, 25, 25, 55, 45, 30, 25, 25], loop: true },
+      jump:    { sprite: 'transformed', rise: 'sprint3', fall: 'sprint4' },                   // airborne: rise / fall frames
+      land:    { sprite: 'transformed', frames: ['up0'], durs: [7], loop: false },              // landing crouch
+      dash:    { sprite: 'transformed', frames: ['sprint0'], durs: [99], loop: false },        // + afterimage trail
       hit:     { sprite: 'transformed', frames: ['hurt0', 'hurt1'], durs: [8, 14], loop: false },
       down:    { sprite: 'transformed', frames: ['down0', 'down1', 'down2'], durs: [0, 34, 20], air: 'down0', loop: false },  // knockdown: down0 while airborne
       ko:      { sprite: 'transformed', frames: ['down0', 'down1'], air: 'down0', durs: [0, 999], loop: false },
@@ -34,19 +39,37 @@ SOTS_DATA.characters = {
       pose:    { sprite: 'transformed', frames: ['idle0', 'idle1', 'idle2', 'idle3'], durs: [16, 12, 16, 12], loop: true },
       civilian: { sprite: 'uniform', frames: ['idle0','idle1','idle2','idle3','idle4','idle5','idle6','idle7','idle8'], fps: 4.5 }
     },
-    stats: { hp: 120, speed: 4.8, depthSpeed: 3.2, invuln: 45 },   // px per tick (60/s); was 3.6 / 2.4
+    stats: { hp: 120, speed: 5.4, depthSpeed: 3.4, invuln: 45 },   // px per tick (60/s); was 3.6 / 2.4
     // Combo moves. Each move plays its own frames: durs = ticks per frame, hit = indexes of the
     // strike frames (hitbox is live ONLY on those). startup/active/recovery are derived from that.
     // reach = [min,max] px in front, depth = lane tolerance, chain = next move by button
     // (accepted once the strike frames are over, buffered).
     moves: {
-      light1: { frames: ['jab0', 'jab1', 'jab2'],          durs: [3, 4, 9],      hit: [1],    dmg: 6,  reach: [0, 95],  depth: 34, knock: 2.5, hitstun: 18, meter: 5, step: 2, chain: { light: 'light2', heavy: 'heavy1' }, sfx: 'light' },
+      light1: { frames: ['jab0', 'jab1', 'jab2'],          durs: [3, 4, 9],      hit: [1],    dmg: 6,  reach: [0, 95],  depth: 34, knock: 2.5, hitstun: 18, meter: 5, step: 2, chain: { light: 'light2', heavy: 'rising' }, sfx: 'light' },
       light2: { frames: ['cross0', 'cross1', 'cross2'],    durs: [3, 4, 10],     hit: [1],    dmg: 7,  reach: [0, 105], depth: 34, knock: 3,   hitstun: 18, meter: 5, step: 3, chain: { light: 'light3', heavy: 'heavy1' }, sfx: 'light' },
-      light3: { frames: ['kick0', 'kick1', 'kick2'],       durs: [5, 5, 16],     hit: [1],    dmg: 11, reach: [0, 115], depth: 38, knock: 9,   hitstun: 26, meter: 8, step: 6, chain: { heavy: 'heavy1' }, sfx: 'heavy' },
+      light3: { frames: ['kick0', 'kick1', 'kick2'],       durs: [5, 5, 16],     hit: [1],    dmg: 11, reach: [0, 115], depth: 38, knock: 9,   hitstun: 26, meter: 8, step: 6, chain: { heavy: 'rush' }, sfx: 'heavy' },
       heavy1: { frames: ['heavy0', 'heavy1', 'heavy2', 'heavy3'], durs: [7, 6, 8, 10], hit: [1], dmg: 15, reach: [0, 125], depth: 40, knock: 12,  hitstun: 30, meter: 10, step: 4, chain: { heavy: 'heavy2' }, sfx: 'heavy', shake: 5 },
-      heavy2: { frames: ['up0', 'up1', 'up2', 'up3'],      durs: [6, 3, 3, 24],  hit: [1, 2], dmg: 16, reach: [0, 100], depth: 40, knock: 3,   hitstun: 40, meter: 12, step: 2, launch: 13, chain: {}, sfx: 'launch', shake: 7 }
+      heavy2: { frames: ['up0', 'up1', 'up2', 'up3'],      durs: [6, 3, 3, 24],  hit: [1, 2], dmg: 16, reach: [0, 100], depth: 40, knock: 3,   hitstun: 40, meter: 12, step: 2, launch: 13, chain: {}, sfx: 'launch', shake: 7 },
+      // --- v4 combos (reuse the attack frames with new timing). multi: true = every strike frame can hit again.
+      // J-J-J-K  RUSH FINISHER: flurry of jabs/crosses ending in a kick
+      rush:    { frames: ['jab1', 'cross1', 'jab1', 'cross1', 'kick0', 'kick1', 'kick2'], durs: [4, 4, 4, 4, 4, 6, 18], hit: [0, 1, 2, 3, 5], multi: true,
+                 dmg: 5, reach: [0, 115], depth: 38, knock: 1.5, hitstun: 22, meter: 4, step: 10, chain: {}, sfx: 'light', shake: 3, finisher: { dmg: 16, knock: 15, sfx: 'heavy', shake: 9 } },
+      // J-K-K  RISING FOLLOW-UP: knee lifts the Noisy, second K hops up after it
+      rising:  { frames: ['kick0', 'kick1', 'kick2'],       durs: [4, 5, 12],     hit: [1],    dmg: 9,  reach: [0, 110], depth: 36, knock: 2,   hitstun: 30, meter: 7, step: 4, launch: 9, chain: { heavy: 'rising2' }, sfx: 'heavy', shake: 4 },
+      rising2: { frames: ['up0', 'up1', 'up2', 'up3'],      durs: [4, 4, 4, 20],  hit: [1, 2], multi: true, dmg: 9, reach: [0, 110], depth: 40, knock: 3, hitstun: 40, meter: 8, step: 6, launch: 14, hop: 10, chain: {}, sfx: 'launch', shake: 6 },
+      // dash + J / dash + K
+      dashStrike: { frames: ['cross0', 'cross1', 'cross2'], durs: [2, 6, 12],     hit: [1],    dmg: 10, reach: [0, 120], depth: 36, knock: 8,   hitstun: 24, meter: 7, step: 28, chain: { light: 'light2' }, sfx: 'light', shake: 3 },
+      shoulder:   { frames: ['heavy0', 'heavy1', 'heavy3'], durs: [4, 10, 14],    hit: [1],    dmg: 13, reach: [-10, 120], depth: 40, knock: 17, hitstun: 32, meter: 9, step: 46, chain: {}, sfx: 'heavy', shake: 7 },
+      // air moves (Space then J / K). air: true = lasts until landing; slam = shockwave when it lands
+      jumpKick: { frames: ['kick0', 'kick1'],               durs: [4, 999],       hit: [1],    dmg: 9,  reach: [0, 115], depth: 40, knock: 7,   hitstun: 24, meter: 6, air: true, chain: {}, sfx: 'heavy', shake: 3 },
+      dive:     { frames: ['heavy1', 'heavy2'],             durs: [6, 999],       hit: [1],    dmg: 12, reach: [-20, 110], depth: 44, knock: 4, hitstun: 28, meter: 8, air: true, dive: 15,
+                  slam: { dmg: 10, radius: 170, depth: 70, knock: 9, launch: 7, hitstun: 30, meter: 6, sfx: 'boom', shake: 12 }, chain: {}, sfx: 'heavy', shake: 5 }
     },
     starters: { light: 'light1', heavy: 'heavy1' },
+    dashMoves: { light: 'dashStrike', heavy: 'shoulder' },      // J / K during (or right after) a dash
+    airMoves: { light: 'jumpKick', heavy: 'dive' },             // J / K while airborne
+    dash: { ticks: 15, speed: 13, cooldown: 30, iframes: 15 },  // Shift: ~0.25 s burst, ~0.5 s cooldown
+    jump: { vz: 13.5, air: 0.9 },                               // Space: launch speed, air control (x speed factor)
     transform: {
       phraseText: 'Balwisyall Nescell gungnir tron',     // shown on screen while the phrase mp3 plays
       phraseAudio: 'assets/audio/hibiki_transform_phrase.mp3',

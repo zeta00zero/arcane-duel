@@ -2,12 +2,12 @@
 // Keyboard is bound below; touch buttons can call Input.press/release later
 // (see Input.bindButton) without touching game logic.
 (function () {
-  const ACTIONS = ['left', 'right', 'up', 'down', 'light', 'heavy', 'ult', 'confirm', 'back', 'pause'];
+  const ACTIONS = ['left', 'right', 'up', 'down', 'light', 'heavy', 'ult', 'jump', 'dash', 'confirm', 'back', 'pause'];
   const KEYMAP = {
     ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
     ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
     KeyJ: 'light', KeyK: 'heavy', KeyL: 'ult',
-    Enter: 'confirm', Space: 'confirm', Escape: 'pause', KeyP: 'pause', Backspace: 'back'
+    Enter: 'confirm', Space: ['confirm', 'jump'], ShiftLeft: 'dash', ShiftRight: 'dash', Escape: 'pause', KeyP: 'pause', Backspace: 'back'
   };
   const held = {}, sources = {}, pressedQ = {};
   ACTIONS.forEach(a => { held[a] = false; sources[a] = new Set(); pressedQ[a] = 0; });
@@ -25,13 +25,15 @@
     if (sources[action].size === 0) held[action] = false;
   }
   window.addEventListener('keydown', e => {
-    const a = KEYMAP[e.code]; if (!a) return;
+    const m = KEYMAP[e.code]; if (!m) return;
     const t = e.target && e.target.tagName;
-    if (t === 'INPUT' && e.target.type === 'range' && (a === 'left' || a === 'right')) return;
-    if (['up','down','left','right','confirm','back'].includes(a)) e.preventDefault();
-    if (!e.repeat) press(a, 'kb:' + e.code);
+    for (const a of [].concat(m)) {                 // a key may drive several actions (Space = confirm + jump)
+      if (t === 'INPUT' && e.target.type === 'range' && (a === 'left' || a === 'right')) continue;
+      if (['up','down','left','right','confirm','back'].includes(a)) e.preventDefault();
+      if (!e.repeat) press(a, 'kb:' + e.code);
+    }
   });
-  window.addEventListener('keyup', e => { const a = KEYMAP[e.code]; if (a) release(a, 'kb:' + e.code); });
+  window.addEventListener('keyup', e => { const m = KEYMAP[e.code]; if (m) [].concat(m).forEach(a => release(a, 'kb:' + e.code)); });
   window.addEventListener('blur', () => ACTIONS.forEach(a => { sources[a].clear(); held[a] = false; }));
   window.Input = {
     ACTIONS, KEYMAP,
