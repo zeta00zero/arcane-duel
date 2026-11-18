@@ -9,6 +9,8 @@ SOTS_DATA.characters = {
     id: 'hibiki',
     name: 'Hibiki',
     color: '#ff8a2a',
+    // character select: card art, blurb, and the animation shown in the big preview
+    select: { card: 'assets/img/hibiki_transformed.png', title: 'Gungnir', blurb: 'A brawler who fights with her fists and her song.', previewAnim: 'idle', previewScale: 1.35 },
     portraits: {                       // VN / menu art
       uniform: 'assets/img/hibiki_uniform.png',
       transformed: 'assets/img/hibiki_transformed.png'
@@ -22,8 +24,8 @@ SOTS_DATA.characters = {
     //   stride = sheet px travelled per full cycle -> walk speed is tied to actual movement (no foot sliding).
     anims: {
       idle:    { sprite: 'transformed', frames: ['idle0', 'idle1', 'idle2', 'idle3'], durs: [16, 12, 16, 12], loop: true },
-      // move cycle = the user's own 9-frame run (art/raw/anims/run_user.gif). ~22 sheet px of ground per frame.
-      walk:    { sprite: 'transformed', frames: ['run0', 'run1', 'run2', 'run3', 'run4', 'run5', 'run6', 'run7', 'run8'], stride: 200, loop: true },
+      // run cycle: 8 frames = 2 steps (run0-3 left leg lands / right leg pushes off and swings, run4-7 swapped). ~38 sheet px of ground per frame.
+      walk:    { sprite: 'transformed', frames: ['run0', 'run1', 'run2', 'run3', 'run4', 'run5', 'run6', 'run7'], stride: 300, loop: true },
       hit:     { sprite: 'transformed', frames: ['hurt0', 'hurt1'], durs: [8, 14], loop: false },
       down:    { sprite: 'transformed', frames: ['down0', 'down1', 'down2'], durs: [0, 34, 20], air: 'down0', loop: false },  // knockdown: down0 while airborne
       ko:      { sprite: 'transformed', frames: ['down0', 'down1'], air: 'down0', durs: [0, 999], loop: false },
@@ -62,6 +64,24 @@ SOTS_DATA.characters = {
       { id: 'song3', title: 'Song 3 (placeholder)', artist: 'Hibiki', file: 'assets/audio/hibiki_song3.mp3', previewStart: 12, previewLength: 15 }
     ]
   }
+};
+
+// ============================================================
+//  CHARACTER SELECT ROSTER - order of the grid. A string = a playable
+//  character id from SOTS_DATA.characters; an object = a locked slot.
+//  To add a hero: add her entry above (sprites, anims, moves, songs,
+//  transform/ultimate videos) and put her id here.
+// ============================================================
+SOTS_DATA.roster = {
+  columns: 3,                 // grid columns; more slots than fit just scroll
+  slots: [
+    'hibiki',
+    { locked: true, name: 'Coming Soon' },
+    { locked: true, name: 'Coming Soon' },
+    { locked: true, name: 'Coming Soon' },
+    { locked: true, name: 'Coming Soon' },
+    { locked: true, name: 'Coming Soon' }
+  ]
 };
 
 // ============================================================

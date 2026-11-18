@@ -41,7 +41,7 @@ function preloadAll() {
   Object.values(D.enemies).forEach(e => used.add(e.sheet));
   used.forEach(k => META[k] && list.push(sheetSrc(k)));
   Object.values(D.characters).forEach(c => Object.values(c.portraits).forEach(p => list.push(p)));
-  D.missions.forEach(m => { list.push(m.vnBackground, m.stage.background.far, m.stage.background.near); });
+  D.missions.forEach(m => { const b = m.stage.background; list.push(m.vnBackground, ...(b.layers ? b.layers.map(l => l.src) : [b.far, b.near])); });
   return Promise.all(list.map(loadImg));
 }
 // draw a frame of a sheet. (x,y) = foot position on screen. flip = mirror horizontally.
@@ -142,9 +142,83 @@ const Missions = {
     });
     setFocus([...list.children]);
   },
-  pick() { G.mission = D.missions[focus.i]; G.char = D.characters[G.mission.character]; AudioManager.sfx('confirm'); go(Songs); }
+  pick() { G.mission = D.missions[focus.i]; if (!G.char) G.char = D.characters[G.mission.character]; AudioManager.sfx('confirm'); go(CharSelect); }
 };
 $('scr-missions').addEventListener('click', e => { const b = e.target.closest('[data-act=back]'); if (b) go(Title); });
+
+// One background layer: { src, parallax (0 = fixed, 1 = moves with the ground), y | bottom, scale }.
+// Tiles horizontally at its own width (layer art is built seamless by tools/build_bg3.py).
+function drawBGLayer(L, cam) {
+  const im = img(L.src); if (!im.naturalWidth) return;
+  const k = L.scale || 1, w = Math.round(im.width * k), h = Math.round(im.height * k);
+  const y = L.bottom != null ? L.bottom - h : (L.y || 0);
+  let o = -Math.round(cam * (L.parallax ?? 1)) % w; if (o > 0) o -= w;
+  for (let x = o; x < W; x += w) ctx.drawImage(im, x, y, w, h);
+}
+
+// ============================================================
+// CHARACTER SELECT (grid from SOTS_DATA.roster; scales to any number of slots)
+// ============================================================
+const SILHOUETTE = `<svg viewBox="0 0 100 160" class="cs-sil"><g fill="#000" opacity=".55"><circle cx="50" cy="38" r="26"/><path d="M22 70 Q50 58 78 70 L84 120 L66 122 L64 158 L54 158 L50 124 L46 158 L36 158 L34 122 L16 120 Z"/></g></svg>`;
+const CharSelect = {
+  t: 0,
+  enter() {
+    show('scr-chars'); this.t = 0;
+    const R = D.roster || { columns: 3, slots: Object.keys(D.characters) };
+    this.slots = R.slots.map(s => typeof s === 'string' ? { id: s, c: D.characters[s] } : { locked: true, name: s.name || 'Coming Soon' });
+    this.cols = R.columns || 3;
+    const grid = $('cs-grid'); grid.innerHTML = ''; grid.style.gridTemplateColumns = `repeat(${this.cols}, 1fr)`;
+    this.slots.forEach((s, i) => {
+      const el = document.createElement('div'); el.className = 'cs-card' + (s.locked ? ' locked' : '');
+      el.innerHTML = s.locked ? `${SILHOUETTE}<div class="cs-q">?</div><div class="cs-cname">${s.name}</div>`
+        : `<img src="${(s.c.select && s.c.select.card) || s.c.portraits.transformed}" alt=""><div class="cs-cname">${s.c.name}</div>`;
+      el.onclick = () => { if (focus.i === i) this.confirm(); else { focus.i = i; markFocus(); AudioManager.sfx('select'); } };
+      el.ondblclick = () => this.confirm();
+      el.onmouseenter = () => { if (focus.i !== i) { focus.i = i; markFocus(); } };
+      grid.appendChild(el);
+    });
+    const def = Math.max(0, this.slots.findIndex(s => s.c && G.char ? s.c === G.char : s.id === (G.mission && G.mission.character)));
+    setFocus([...grid.children], def, i => this.describe(i));
+  },
+  describe(i) {
+    const s = this.slots[i]; if (!s) return;
+    const sel = s.c && s.c.select || {};
+    $('cs-name').textContent = s.locked ? '???' : s.c.name;
+    $('cs-title').textContent = s.locked ? 'Locked' : (sel.title || '');
+    $('cs-blurb').textContent = s.locked ? 'A new singer is on the way.' : (sel.blurb || '');
+    $('cs-confirm').disabled = !!s.locked;
+    focus.items[i] && focus.items[i].scrollIntoView({ block: 'nearest' });
+  },
+  move(a) {
+    const n = this.slots.length, c = this.cols; let i = focus.i;
+    if (a === 'left') i = (i - 1 + n) % n; if (a === 'right') i = (i + 1) % n;
+    if (a === 'up') i = i - c >= 0 ? i - c : i; if (a === 'down') i = i + c < n ? i + c : i;
+    if (i !== focus.i) { focus.i = i; AudioManager.sfx('select'); markFocus(); }
+  },
+  confirm() {
+    const s = this.slots[focus.i];
+    if (!s || s.locked) { const el = focus.items[focus.i]; if (el) { el.classList.remove('deny'); void el.offsetWidth; el.classList.add('deny'); } AudioManager.sfx('select'); return; }
+    if (G.char !== s.c) G.song = null;
+    G.char = s.c; AudioManager.sfx('confirm');
+    preloadVideo(charVideos(G.char));          // start the big downloads now (transform first, then ultimate)
+    go(Songs);
+  },
+  update() {
+    this.t++;
+    const cv = $('cs-canvas'), x = cv.getContext('2d'); x.clearRect(0, 0, cv.width, cv.height); x.imageSmoothingEnabled = false;
+    const s = this.slots && this.slots[focus.i];
+    if (!s || s.locked) { x.fillStyle = '#ffffff22'; x.font = '160px Pixelify'; x.textAlign = 'center'; x.fillText('?', 210, 290); return; }
+    const c = s.c, sel = c.select || {}, an = c.anims[sel.previewAnim || 'idle'], sp = c.sprites[an.sprite || 'transformed'];
+    const m = META[sp.sheet], im = img(sheetSrc(sp.sheet)); if (!m || !im.complete) return;
+    const f = animFrame(an, this.t), i = m.frames[f] ?? 0, [cw, ch] = m.cell, [ax, ay] = m.anchor, cols = m.cols || 1e9, k = sel.previewScale || 1.3;
+    x.fillStyle = 'rgba(0,0,0,.35)'; x.beginPath(); x.ellipse(210, 395, 70, 14, 0, 0, Math.PI * 2); x.fill();
+    x.drawImage(im, (i % cols) * cw, Math.floor(i / cols) * ch, cw, ch, 210 - ax * k, 395 - ay * k, cw * k, ch * k);
+  }
+};
+$('scr-chars').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.dataset.act === 'back') go(Missions); if (b.dataset.act === 'confirm') CharSelect.confirm();
+});
 
 // ============================================================
 // SONG SELECT (with preview)
@@ -178,7 +252,7 @@ const Songs = {
 };
 $('scr-songs').addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
-  if (b.dataset.act === 'back') go(Missions); if (b.dataset.act === 'confirm') Songs.confirm();
+  if (b.dataset.act === 'back') go(CharSelect); if (b.dataset.act === 'confirm') Songs.confirm();
 });
 
 // ============================================================
@@ -188,7 +262,7 @@ const VN = {
   enter() {
     show('scr-vn'); this.lines = G.mission.dialogue; this.i = -1;
     $('vn-bg').src = G.mission.vnBackground; this.next();
-    preloadVideo(G.char.transform.video);          // big video: start downloading while the story plays
+    preloadVideo(charVideos(G.char));             // no-op if already queued at character select
   },
   next() {
     if (this.typing) { this.finishTyping(); return; }
@@ -208,39 +282,126 @@ const VN = {
 $('scr-vn').addEventListener('click', e => { if (e.target.id === 'vn-skip') { AudioManager.sfx('select'); VN.end(); return; } VN.next(); });
 
 // ============================================================
-// VIDEO PLAYER (transformation / ultimate)
+// VIDEO MANAGER (transformation / ultimate / any cut-in video)
+//  - preload(list): downloads the files one after another (first = most urgent) with fetch() into memory,
+//    then gives each its own <video> element (created once, reused; src assigned once -> no double download).
+//    Why not just <video preload=auto>? Chrome stops pre-buffering a paused video at ~75% (it waits for play),
+//    so on slow links the end of the clip stalled. A fully downloaded file can never stall or restart.
+//  - play(src, done): if the file is ready it plays at once; otherwise a spinner shows "Loading NN%" until it is.
+//    Transient 'waiting' / 'stalled' only show the spinner, they never restart or skip the video.
+//    It skips only on a real error or when no data at all arrives for WAIT_MS. Skip / Enter / Esc always skip.
+//  - If fetch() is unavailable (file:// pages) it falls back to streaming and starts once the measured
+//    download speed says the clip can play through.
+//  All paths come from character data (transform.video, ultimate.video).
 // ============================================================
-const vid = $('vid'); AudioManager.registerVideo(vid);
-const vidLoading = $('vid-loading');
-const VIDEO_WAIT_MS = 25000;            // how long to wait for a slow video before giving up (only if nothing has loaded)
-let vidDone = null;
-const sameSrc = src => vid.src && decodeURI(vid.src).endsWith(src);
-// start downloading a video early (e.g. the transformation video during the VN / phrase) so it is ready to play
-function preloadVideo(src) {
-  if (!src || sameSrc(src) || (curScreen === 'scr-video' && !vid.paused)) return;
-  vid.preload = 'auto'; vid.src = src; vid.load();
-}
-function playVideo(src, done) {
-  show('scr-video'); vidDone = done; let finished = false;
-  const showLoading = on => vidLoading && vidLoading.classList.toggle('on', on);
-  const fin = () => {
-    if (finished) return; finished = true; vid.pause(); showLoading(false);
-    vid.onended = vid.onerror = vid.onwaiting = vid.onplaying = vid.oncanplay = null; clearTimeout(guard);
-    const d = vidDone; vidDone = null; d && d();
-  };
-  vid.onended = fin;
-  vid.onerror = () => { console.warn('video failed', src); fin(); };        // real errors still skip
-  vid.onwaiting = () => showLoading(true);
-  vid.onplaying = vid.oncanplay = () => { if (vid.readyState >= 3) showLoading(false); };
-  vid.muted = false;
-  if (!sameSrc(src)) vid.src = src;                                        // reuse a preloaded video
-  try { vid.currentTime = 0; } catch (e) {}
-  showLoading(vid.readyState < 3);
-  vid.play().catch(() => { vid.muted = true; vid.play().catch(fin); });
-  const guard = setTimeout(() => { if (vid.readyState < 2) { console.warn('video too slow, skipping', src); fin(); } }, VIDEO_WAIT_MS);
-  playVideo.skip = fin;
-}
-$('vid-skip').addEventListener('click', () => playVideo.skip && playVideo.skip());
+const VideoManager = (() => {
+  const box = $('scr-video'), spinner = $('vid-loading'), WAIT_MS = 25000;
+  const pool = new Map();            // src -> entry
+  const queue = []; let loading = null;
+  const pctEl = () => $('vid-pct');
+  const spin = on => { spinner && spinner.classList.toggle('on', !!on); if (!on && pctEl()) pctEl().textContent = ''; };
+  function entry(src) {
+    let e = pool.get(src); if (e) return e;
+    const el = document.createElement('video');
+    el.setAttribute('playsinline', ''); el.playsInline = true; el.preload = 'auto'; el.dataset.src = src;
+    e = { el, src, ready: false, failed: false, done: false, streamed: false, got: 0, total: 0, lastProg: performance.now() };
+    el.addEventListener('canplaythrough', () => { e.ready = true; pump(); });
+    el.addEventListener('error', () => { e.failed = true; console.warn('video failed to load', src); pump(); });
+    box.insertBefore(el, box.firstChild); AudioManager.registerVideo(el);
+    pool.set(src, e); download(e);
+    return e;
+  }
+  async function download(e) {
+    try {
+      if (location.protocol === 'file:' || !window.fetch || !window.ReadableStream) throw new Error('no fetch');
+      const r = await fetch(e.src); if (!r.ok) throw new Error('HTTP ' + r.status);
+      e.total = +r.headers.get('content-length') || 0;
+      const rd = r.body.getReader(), parts = [];
+      for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); e.got += value.length; e.lastProg = performance.now(); }
+      e.el.src = URL.createObjectURL(new Blob(parts, { type: 'video/mp4' }));   // the ONLY src assignment
+      e.done = true;
+    } catch (err) {
+      if (!e.el.src) { e.streamed = true; e.el.src = e.src; }                     // fallback: stream it
+    }
+    pump();
+  }
+  const bufferedAhead = el => { const b = el.buffered; for (let i = 0; i < b.length; i++) if (b.start(i) <= el.currentTime + 0.1 && b.end(i) > el.currentTime) return b.end(i) - el.currentTime; return 0; };
+  const loaded = e => e.failed || (e.done && (e.ready || e.el.readyState >= 3)) || (e.streamed && (e.ready || e.el.readyState >= 4));
+  function pump() {                  // sequential preloading: next file once this one is in
+    if (loading && !loaded(loading)) return;
+    loading = null;
+    while (queue.length) { const e = entry(queue.shift()); if (loaded(e)) continue; loading = e; break; }
+  }
+  function preload(list) {
+    (Array.isArray(list) ? list : [list]).filter(Boolean).forEach(src => { if (!pool.has(src) && !queue.includes(src)) queue.push(src); });
+    pump();
+  }
+  // streaming fallback only: can we start now and reach the end without stalling at the measured speed?
+  function canFinish(e, st) {
+    const el = e.el, dur = el.duration;
+    if (!(dur > 0) || el.readyState < 3) return false;
+    const ahead = bufferedAhead(el), end = el.currentTime + ahead, left = dur - el.currentTime;
+    if (end >= dur - 0.1) return true;
+    const now = performance.now(); st.samples.push([now, end]); while (st.samples.length > 2 && now - st.samples[0][0] > 6000) st.samples.shift();
+    const [t0, b0] = st.samples[0], span = (now - t0) / 1000;
+    if (span < 1.5) return false;
+    const rate = (end - b0) / span;
+    return ahead >= 3 && ahead >= left * Math.max(0, 1 - rate) * 1.2 + 2;
+  }
+  const playable = (e, st) => e.done ? e.el.readyState >= 3 : e.streamed ? canFinish(e, st) : false;
+  let current = null;
+  function play(src, done) {
+    show('scr-video');
+    const e = entry(src), el = e.el;
+    pool.forEach(o => o.el.classList.toggle('active', o === e));
+    let finished = false, started = false, poll = null;
+    const st = { samples: [], lastEnd: -1, lastProg: performance.now() };
+    const off = () => { el.removeEventListener('ended', fin); el.removeEventListener('waiting', onWait); el.removeEventListener('playing', onPlaying); el.removeEventListener('error', onErr); };
+    function fin() {
+      if (finished) return; finished = true; clearInterval(poll); off(); spin(false);
+      el.pause(); el.classList.remove('active'); current = null;
+      try { el.currentTime = 0; } catch (err) {}
+      done && done();
+    }
+    const onWait = () => { if (started) spin(true); };              // transient: spinner only, never restart / skip
+    const onPlaying = () => spin(false);
+    const onErr = () => { console.warn('video failed', src); fin(); };
+    function start() {
+      if (started || finished) return; started = true; clearInterval(poll); spin(false);
+      el.muted = false;
+      el.play().catch(() => { el.muted = true; el.play().catch(fin); });
+    }
+    el.addEventListener('ended', fin); el.addEventListener('waiting', onWait); el.addEventListener('playing', onPlaying); el.addEventListener('error', onErr);
+    if (e.failed) { fin(); return; }
+    try { if (el.currentTime > 0) el.currentTime = 0; } catch (err) {}
+    { const qi = queue.indexOf(src); if (qi >= 0) queue.splice(qi, 1); }    // this one jumps the preload queue
+    if (playable(e, st)) start();
+    else {
+      spin(true);
+      poll = setInterval(() => {
+        if (e.failed) return fin();
+        if (playable(e, st)) return start();
+        const now = performance.now(); let p = 0;
+        if (e.streamed) { const end = el.currentTime + bufferedAhead(el); if (end > st.lastEnd + 0.01) { st.lastEnd = end; st.lastProg = now; } p = el.duration > 0 ? end / el.duration : 0; }
+        else { st.lastProg = Math.max(st.lastProg, e.lastProg); p = e.total ? e.got / e.total : 0; }
+        if (pctEl()) pctEl().textContent = p ? ' ' + Math.min(99, Math.floor(p * 100)) + '%' : '';
+        // give up only when NOTHING arrives for WAIT_MS (a slow-but-moving download keeps going; Skip is always there)
+        if (now - st.lastProg > WAIT_MS) { if (el.readyState >= 3) start(); else { console.warn('video too slow, skipping', src); fin(); } }
+      }, 200);
+    }
+    current = { src, skip: fin };
+  }
+  const status = () => [...pool.values()].map(e => ({ src: e.src, got: e.got, total: e.total, done: e.done, streamed: e.streamed, readyState: e.el.readyState }));
+  return { preload, play, status, skip: () => current && current.skip(), get playing() { return current; }, pool, el: src => pool.get(src) && pool.get(src).el };
+})();
+const preloadVideo = list => VideoManager.preload(list);
+const playVideo = (src, done) => VideoManager.play(src, done);
+playVideo.skip = () => VideoManager.skip();
+// videos a character needs: transformation first (it plays first), then the ultimate
+const charVideos = c => [c.transform && c.transform.video, c.ultimate && c.ultimate.video].filter(Boolean);
+$('vid-skip').addEventListener('click', () => VideoManager.skip());
+window.SOTS.videos = VideoManager;
+
 
 // ============================================================
 // TRANSFORMATION (canvas)
@@ -250,7 +411,7 @@ const Transform = {
   enter() {
     show(null); this.phase = 'phrase'; this.t = 0; this.textN = 0; this.parts = [];
     const tr = G.char.transform;
-    preloadVideo(tr.video);
+    preloadVideo(charVideos(G.char));
     AudioManager.playVoice(tr.phraseAudio).then(() => { if (this.phase === 'phrase') this.toShine(); });
     this.voiceStart = performance.now();
   },
@@ -326,6 +487,7 @@ const Fight = {
     this.stats = { hits: 0, maxCombo: 0, dmgTaken: 0, frames: 0, kills: 0 };
     this.combo = 0; this.comboT = 0; this.comboPop = 0;
     this.p = { x: 200, y: 610, z: 0, vx: 0, vz: 0, face: 1, hp: c.stats.hp, hpMax: c.stats.hp, meter: 0, state: 'idle', t: 0, move: null, mt: 0, buf: [], inv: 0, hitIds: new Set() };
+    preloadVideo(charVideos(c));                    // ultimate must be ready before L is pressed
     AudioManager.playMusic(G.song.file, { loop: true, start: 0 });
     this.songT = 240; Input.clear();
     this.banner = { text: 'MISSION START', sub: G.mission.title, t: 0, dur: 120 };
@@ -589,8 +751,10 @@ const Fight = {
     if (this.flash) { ctx.globalAlpha = Math.min(0.8, this.flash / 12); ctx.fillStyle = this.flashColor; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
   },
   drawBG() {
-    const bg = this.st.background, far = img(bg.far), near = img(bg.near), cam = this.camX;
-    const fw = far.naturalWidth ? far.width * (H / far.height) : W, fy = bg.farY ?? -60;   // far layer keeps its aspect (may be a mirrored double-width tile)
+    const bg = this.st.background, cam = this.camX;
+    if (bg.layers) { for (const L of bg.layers) drawBGLayer(L, cam); return; }   // data-driven parallax layers, back to front
+    const far = img(bg.far), near = img(bg.near);                               // legacy 2-layer stages
+    const fw = far.naturalWidth ? far.width * (H / far.height) : W, fy = bg.farY ?? -60;
     const fo = -(cam * 0.2) % fw;
     for (let x = fo; x < W; x += fw) ctx.drawImage(far, x, fy, fw, H);
     if (near.naturalWidth) { const nw = near.width, o = -(cam % nw); for (let x = o; x < W; x += nw) ctx.drawImage(near, x, bg.nearY); }
@@ -706,7 +870,7 @@ const Fight = {
 // scene switching, overlay buttons, keyboard routing, loop
 // ============================================================
 function go(scene) { if (G.scene && G.scene.exit) G.scene.exit(); overlay(null); G.scene = scene; G.log.push(Object.keys(SCENES).find(k => SCENES[k] === scene)); scene.enter(); }
-const SCENES = { Title, Missions, Songs, VN, Transform, Fight };
+const SCENES = { Title, Missions, CharSelect, Songs, VN, Transform, Fight };
 window.SOTS.SCENES = SCENES; window.SOTS.go = go;
 
 $('scr-overlay').addEventListener('click', e => {
@@ -740,7 +904,10 @@ Input.onPress(a => {
     if (a === 'confirm') Missions.pick(); if (a === 'pause' || a === 'back') go(Title);
   } else if (s === Songs) {
     if (a === 'up') { moveFocus(-1); Songs.preview(focus.i); } if (a === 'down') { moveFocus(1); Songs.preview(focus.i); }
-    if (a === 'confirm') Songs.confirm(); if (a === 'pause' || a === 'back') go(Missions);
+    if (a === 'confirm' || a === 'light') Songs.confirm(); if (a === 'pause' || a === 'back' || a === 'heavy') go(CharSelect);
+  } else if (s === CharSelect) {
+    if (['left', 'right', 'up', 'down'].includes(a)) CharSelect.move(a);
+    if (a === 'confirm' || a === 'light') CharSelect.confirm(); if (a === 'pause' || a === 'back' || a === 'heavy') go(Missions);
   } else if (s === VN) {
     if (a === 'confirm') VN.next(); if (a === 'pause') VN.end();
   }
@@ -760,6 +927,7 @@ function frame(now) {
 // debug / test hooks
 window.SOTS.debug = {
   fillMeter() { if (G.scene === Fight) Fight.p.meter = G.char.ultimate.meterMax; },
+  startFight(mi = 0) { G.mission = D.missions[mi]; G.char = G.char || D.characters[G.mission.character]; G.song = G.song || G.char.songs[0]; go(Fight); },
   killAll() { if (G.scene === Fight) Fight.enemies.forEach(e => { e.hp = 0; Fight.killEnemy(e); }); },
   hurt(n) { if (G.scene === Fight) { Fight.p.inv = 0; const god = G.debug.god; G.debug.god = false; Fight.hurtPlayer(n, -1); G.debug.god = god; } },
   state() { const f = Fight; return { scene: G.log[G.log.length - 1], fight: G.scene === Fight ? { state: f.state, hp: f.p.hp, meter: f.p.meter, x: Math.round(f.p.x), wave: f.waveIdx, enemies: f.enemies.length, combo: f.combo, maxCombo: f.stats.maxCombo, hits: f.stats.hits, pstate: f.p.state, lock: f.lock } : null, screen: curScreen, overlay: overlayOn() }; }

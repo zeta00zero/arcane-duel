@@ -19,7 +19,14 @@ SOTS_DATA.missions = [
       { speaker: 'Hibiki', portrait: 'uniform', text: "Okay. I won't run away. I'll sing - and I'll fight!" }
     ],
     stage: {
-      background: { far: 'assets/img/bg_day_far.jpg', near: 'assets/img/bg_day_near.png', nearY: 330, farY: -60, shadow: 0.5, rim: 'rgba(16,20,40,0.85)' },   // daytime city (old dusk: bg_far_skyline.jpg / bg_near_street.png, nearY 188)
+      background: {                 // 3 parallax layers, drawn back to front
+          layers: [
+            { src: 'assets/img/bg3_sky.jpg',    y: 0,        parallax: 0.06 },   // L3 sky: sun + clouds (slowest)
+            { src: 'assets/img/bg3_city.png',   bottom: 432, parallax: 0.45 },   // L2 buildings, trees, lamps, fence (alpha sky)
+            { src: 'assets/img/bg3_ground.jpg', y: 430,      parallax: 1 }       // L1 road the fighters stand on (fastest)
+          ],
+          shadow: 0.5, rim: 'rgba(16,20,40,0.85)'
+        },   // daytime city, 3 layers built by tools/build_bg3.py
       length: 5600,
       laneTop: 520, laneBottom: 700,
       waves: [
