@@ -1,0 +1,21 @@
+{
+ "cell": [
+  136,
+  255
+ ],
+ "anchor": [
+  78,
+  251
+ ],
+ "frames": {
+  "idle0": 0,
+  "idle1": 1,
+  "idle2": 2,
+  "idle3": 3,
+  "idle4": 4,
+  "idle5": 5,
+  "idle6": 6,
+  "idle7": 7,
+  "idle8": 8
+ }
+}

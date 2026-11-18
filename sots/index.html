@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Songs of the Symphony</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <canvas id="game" width="1280" height="720"></canvas>
+
+    <!-- TITLE -->
+    <div class="screen" id="scr-title">
+      <div class="title-logo"><div class="t1">Songs of the</div><div class="t2">Symphony</div></div>
+      <div class="menu" id="title-menu">
+        <button class="btn big" data-act="start">Start</button>
+        <button class="btn" data-act="options">Options</button>
+      </div>
+      <div class="press" id="title-press">Click or press Enter</div>
+      <div class="foot">Private prototype - v0.1</div>
+    </div>
+
+    <!-- MISSION SELECT -->
+    <div class="screen" id="scr-missions">
+      <h1 class="hdr">Mission Select</h1>
+      <div id="mission-list" class="list"></div>
+      <div class="bar"><button class="btn" data-act="back">Back</button></div>
+    </div>
+
+    <!-- SONG SELECT -->
+    <div class="screen" id="scr-songs">
+      <h1 class="hdr">Choose Your Song</h1>
+      <div class="songs-wrap">
+        <div class="songs-portrait"><img id="songs-portrait" alt=""><div id="songs-charname" class="charname"></div></div>
+        <div class="songs-panel">
+          <div id="song-list" class="list"></div>
+          <div class="hint">Hover or press <b>Preview</b> to hear a short clip. Up/Down + Enter also works.</div>
+        </div>
+      </div>
+      <div class="bar"><button class="btn" data-act="back">Back</button><button class="btn big" id="song-confirm" data-act="confirm">Confirm</button></div>
+    </div>
+
+    <!-- VISUAL NOVEL -->
+    <div class="screen" id="scr-vn">
+      <img id="vn-bg" class="vn-bg" alt="">
+      <img id="vn-portrait" class="vn-portrait" alt="">
+      <div class="vn-box" id="vn-box">
+        <div class="vn-name" id="vn-name"></div>
+        <div class="vn-text" id="vn-text"></div>
+        <div class="vn-next" id="vn-next">&#9660;</div>
+      </div>
+      <button class="btn skip" id="vn-skip">Skip &raquo;</button>
+    </div>
+
+    <!-- VIDEO OVERLAY (transformation / ultimate) -->
+    <div class="screen" id="scr-video">
+      <video id="vid" playsinline preload="auto"></video>
+      <button class="btn skip" id="vid-skip">Skip &raquo;</button>
+    </div>
+
+    <!-- OVERLAY (pause / game over / clear / options) -->
+    <div class="screen overlay" id="scr-overlay">
+      <div class="panel" id="overlay-panel"></div>
+    </div>
+  </div>
+</div>
+<script src="js/data/sprite_meta.js"></script>
+<script src="js/data/characters.js"></script>
+<script src="js/data/missions.js"></script>
+<script src="js/input.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
