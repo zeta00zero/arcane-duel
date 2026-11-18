@@ -30,6 +30,24 @@
       <div class="bar"><button class="btn" data-act="back">Back</button></div>
     </div>
 
+    <!-- CHARACTER SELECT (grid built from SOTS_DATA.roster) -->
+    <div class="screen" id="scr-chars">
+      <h1 class="hdr">Choose Your Singer</h1>
+      <div class="cs-wrap">
+        <div class="cs-preview">
+          <canvas id="cs-canvas" width="420" height="420"></canvas>
+          <div id="cs-name" class="cs-name"></div>
+          <div id="cs-title" class="cs-title"></div>
+          <div id="cs-blurb" class="cs-blurb"></div>
+        </div>
+        <div class="cs-side">
+          <div id="cs-grid" class="cs-grid"></div>
+          <div class="hint">Arrows to choose &middot; <b>J</b>/Enter to confirm &middot; <b>K</b>/Esc to go back</div>
+        </div>
+      </div>
+      <div class="bar"><button class="btn" data-act="back">Back</button><button class="btn big" id="cs-confirm" data-act="confirm">Confirm</button></div>
+    </div>
+
     <!-- SONG SELECT -->
     <div class="screen" id="scr-songs">
       <h1 class="hdr">Choose Your Song</h1>
@@ -57,9 +75,9 @@
 
     <!-- VIDEO OVERLAY (transformation / ultimate) -->
     <div class="screen" id="scr-video">
-      <video id="vid" playsinline preload="auto"></video>
+      <!-- <video> elements are created by VideoManager (one per file) -->
       <button class="btn skip" id="vid-skip">Skip &raquo;</button>
-      <div id="vid-loading"><span class="spin"></span>Loading...</div>
+      <div id="vid-loading"><span class="spin"></span>Loading<span id="vid-pct"></span></div>
     </div>
 
     <!-- OVERLAY (pause / game over / clear / options) -->
