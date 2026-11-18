@@ -13,30 +13,36 @@ SOTS_DATA.characters = {
       uniform: 'assets/img/hibiki_uniform.png',
       transformed: 'assets/img/hibiki_transformed.png'
     },
-    sprites: {                         // sheet keys from js/data/sprite_meta.js (built by tools/build_art.py)
-      transformed: { sheet: 'hibiki_sheet', scale: 0.82 },
+    sprites: {                         // sheet keys from js/data/sprite_meta.js (built by tools/build_anims.py / build_art.py)
+      transformed: { sheet: 'hibiki_anim', scale: 0.82 },
       uniform: { sheet: 'hibiki_uniform_px', scale: 0.82 }
     },
-    // animations: frame names inside the sheet, fps
+    // Animations: frame names inside the sprite's sheet.
+    //   durs  = ticks (1/60 s) per frame (or fps for an even rate). loop:false holds the last frame.
+    //   stride = sheet px travelled per full cycle -> walk speed is tied to actual movement (no foot sliding).
     anims: {
-      idle:   { sprite: 'transformed', frames: ['idle'], fps: 1, breathe: true },
-      walk:   { sprite: 'transformed', frames: ['walk1', 'idle', 'walk2', 'idle'], fps: 9 },
-      hit:    { sprite: 'transformed', frames: ['hit'], fps: 1 },
-      ko:     { sprite: 'transformed', frames: ['ko'], fps: 1 },
-      ult:    { sprite: 'transformed', frames: ['ult'], fps: 1 },
-      pose:   { sprite: 'transformed', frames: ['pose'], fps: 1, breathe: true },
+      idle:    { sprite: 'transformed', frames: ['idle0', 'idle1', 'idle2', 'idle3'], durs: [16, 12, 16, 12], loop: true },
+      // move cycle = the user's own 9-frame run (art/raw/anims/run_user.gif). ~22 sheet px of ground per frame.
+      walk:    { sprite: 'transformed', frames: ['run0', 'run1', 'run2', 'run3', 'run4', 'run5', 'run6', 'run7', 'run8'], stride: 200, loop: true },
+      hit:     { sprite: 'transformed', frames: ['hurt0', 'hurt1'], durs: [8, 14], loop: false },
+      down:    { sprite: 'transformed', frames: ['down0', 'down1', 'down2'], durs: [0, 34, 20], air: 'down0', loop: false },  // knockdown: down0 while airborne
+      ko:      { sprite: 'transformed', frames: ['down0', 'down1'], air: 'down0', durs: [0, 999], loop: false },
+      ultpose: { sprite: 'transformed', frames: ['ult0', 'ult1', 'ult2'], durs: [8, 9, 99], loop: false },
+      victory: { sprite: 'transformed', frames: ['win0', 'win1', 'win2'], durs: [14, 16, 999], loop: false },
+      pose:    { sprite: 'transformed', frames: ['idle0', 'idle1', 'idle2', 'idle3'], durs: [16, 12, 16, 12], loop: true },
       civilian: { sprite: 'uniform', frames: ['idle0','idle1','idle2','idle3','idle4','idle5','idle6','idle7','idle8'], fps: 4.5 }
     },
-    stats: { hp: 120, speed: 3.6, depthSpeed: 2.4, invuln: 45 },
-    // Combo moves. startup/active/recovery are in frames (60 fps).
-    // reach = [min,max] px in front, depth = lane tolerance, chain = next move by button.
-    // cancelFrom = frame from which the next chained input is accepted (buffered).
+    stats: { hp: 120, speed: 4.8, depthSpeed: 3.2, invuln: 45 },   // px per tick (60/s); was 3.6 / 2.4
+    // Combo moves. Each move plays its own frames: durs = ticks per frame, hit = indexes of the
+    // strike frames (hitbox is live ONLY on those). startup/active/recovery are derived from that.
+    // reach = [min,max] px in front, depth = lane tolerance, chain = next move by button
+    // (accepted once the strike frames are over, buffered).
     moves: {
-      light1: { frame: 'light1', startup: 3, active: 4, recovery: 9,  dmg: 6,  reach: [0, 95],  depth: 34, knock: 2.5, hitstun: 18, meter: 5, step: 2, chain: { light: 'light2', heavy: 'heavy1' }, sfx: 'light' },
-      light2: { frame: 'light2', startup: 3, active: 4, recovery: 10, dmg: 7,  reach: [0, 105], depth: 34, knock: 3,   hitstun: 18, meter: 5, step: 3, chain: { light: 'light3', heavy: 'heavy1' }, sfx: 'light' },
-      light3: { frame: 'light3', startup: 5, active: 5, recovery: 16, dmg: 11, reach: [0, 115], depth: 38, knock: 9,   hitstun: 26, meter: 8, step: 6, chain: { heavy: 'heavy1' }, sfx: 'heavy' },
-      heavy1: { frame: 'heavy1', startup: 7, active: 6, recovery: 18, dmg: 15, reach: [0, 125], depth: 40, knock: 12,  hitstun: 30, meter: 10, step: 4, chain: { heavy: 'heavy2' }, sfx: 'heavy', shake: 5 },
-      heavy2: { frame: 'heavy2', startup: 6, active: 6, recovery: 24, dmg: 16, reach: [0, 100], depth: 40, knock: 3,   hitstun: 40, meter: 12, step: 2, launch: 13, chain: {}, sfx: 'launch', shake: 7 }
+      light1: { frames: ['jab0', 'jab1', 'jab2'],          durs: [3, 4, 9],      hit: [1],    dmg: 6,  reach: [0, 95],  depth: 34, knock: 2.5, hitstun: 18, meter: 5, step: 2, chain: { light: 'light2', heavy: 'heavy1' }, sfx: 'light' },
+      light2: { frames: ['cross0', 'cross1', 'cross2'],    durs: [3, 4, 10],     hit: [1],    dmg: 7,  reach: [0, 105], depth: 34, knock: 3,   hitstun: 18, meter: 5, step: 3, chain: { light: 'light3', heavy: 'heavy1' }, sfx: 'light' },
+      light3: { frames: ['kick0', 'kick1', 'kick2'],       durs: [5, 5, 16],     hit: [1],    dmg: 11, reach: [0, 115], depth: 38, knock: 9,   hitstun: 26, meter: 8, step: 6, chain: { heavy: 'heavy1' }, sfx: 'heavy' },
+      heavy1: { frames: ['heavy0', 'heavy1', 'heavy2', 'heavy3'], durs: [7, 6, 8, 10], hit: [1], dmg: 15, reach: [0, 125], depth: 40, knock: 12,  hitstun: 30, meter: 10, step: 4, chain: { heavy: 'heavy2' }, sfx: 'heavy', shake: 5 },
+      heavy2: { frames: ['up0', 'up1', 'up2', 'up3'],      durs: [6, 3, 3, 24],  hit: [1, 2], dmg: 16, reach: [0, 100], depth: 40, knock: 3,   hitstun: 40, meter: 12, step: 2, launch: 13, chain: {}, sfx: 'launch', shake: 7 }
     },
     starters: { light: 'light1', heavy: 'heavy1' },
     transform: {
@@ -62,8 +68,11 @@ SOTS_DATA.characters = {
 //  ENEMY DATA (Noisy)
 // ============================================================
 SOTS_DATA.enemies = {
+  // anims.walk: frames played while walking, advanced by distance moved (stride = sheet px per cycle).
+  // 'frame' is the still used for windup / lunge / hit / dying.
   noisy: {
-    name: 'Noisy', sheet: 'noisy_humanoid', frame: 'idle', facesRight: false, scale: 0.95,
+    name: 'Noisy', sheet: 'noisy_anim', frame: 'idle',
+    anims: { walk: { frames: ['walk0', 'walk1', 'walk2', 'walk3'], stride: 150 } },   facesRight: false, scale: 0.95,
     hp: 34, speed: 1.5, width: 60, weight: 1,
     attack: { range: 80, windup: 34, lunge: 14, lungeSpeed: 7, dmg: 9, cooldown: [70, 130] },
     dust: ['#2b2b2b', '#444', '#5a5550', '#1a1a1a', '#77706a']
@@ -75,9 +84,10 @@ SOTS_DATA.enemies = {
     dust: ['#232a33', '#3a3f48', '#555', '#1a1a1a']
   },
   boss: {
-    name: 'Giant Noisy', sheet: 'noisy_boss', frame: 'idle', facesRight: false, scale: 0.88,
+    name: 'Giant Noisy', sheet: 'boss_anim', frame: 'idle',
+    anims: { walk: { frames: ['walk0', 'walk1', 'walk2', 'walk3'], stride: 230 } }, facesRight: false, scale: 0.88,
     hp: 420, speed: 1.1, width: 150, weight: 4, armor: true, boss: true,
-    attack: { range: 150, windup: 46, lunge: 18, lungeSpeed: 6, dmg: 16, cooldown: [80, 130], shake: 10 },
+    attack: { range: 150, windup: 46, lunge: 18, lungeSpeed: 6, dmg: 16, cooldown: [80, 130], shake: 10, knockdown: 0.5 },   // knockdown = chance a hit floors Hibiki
     dust: ['#2b2b2b', '#444', '#5a5550', '#1a1a1a', '#77706a']
   }
 };

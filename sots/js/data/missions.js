@@ -19,7 +19,7 @@ SOTS_DATA.missions = [
       { speaker: 'Hibiki', portrait: 'uniform', text: "Okay. I won't run away. I'll sing - and I'll fight!" }
     ],
     stage: {
-      background: { far: 'assets/img/bg_far_skyline.jpg', near: 'assets/img/bg_near_street.png', nearY: 188 },
+      background: { far: 'assets/img/bg_day_far.jpg', near: 'assets/img/bg_day_near.png', nearY: 330, farY: -60, shadow: 0.5, rim: 'rgba(16,20,40,0.85)' },   // daytime city (old dusk: bg_far_skyline.jpg / bg_near_street.png, nearY 188)
       length: 5600,
       laneTop: 520, laneBottom: 700,
       waves: [

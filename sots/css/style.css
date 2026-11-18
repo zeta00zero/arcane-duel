@@ -73,3 +73,10 @@ html, body { margin: 0; height: 100%; background: #0a0710; overflow: hidden; fon
 .panel .rank { font-size: 80px; color: #ffd36a; text-shadow: 0 5px 0 #b3400f; }
 .vol { display: grid; grid-template-columns: 140px 260px 50px; align-items: center; gap: 10px 14px; font-size: 22px; text-align: left; margin: 0 auto; width: max-content; }
 .vol input { width: 100%; accent-color: #ff8a2a; }
+
+/* small loading indicator while a (large) video buffers */
+#vid-loading { position: absolute; left: 50%; bottom: 56px; transform: translateX(-50%); display: none; align-items: center; gap: 12px;
+  padding: 10px 20px; border-radius: 22px; background: rgba(0,0,0,.6); color: #fff; font: 22px Pixelify, sans-serif; pointer-events: none; }
+#vid-loading.on { display: flex; }
+#vid-loading .spin { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-top-color: #ffd36a; border-radius: 50%; animation: vidspin .8s linear infinite; }
+@keyframes vidspin { to { transform: rotate(360deg); } }
