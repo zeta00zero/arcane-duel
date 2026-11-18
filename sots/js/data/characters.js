@@ -62,13 +62,15 @@ SOTS_DATA.characters = {
       shoulder:   { frames: ['heavy0', 'heavy1', 'heavy3'], durs: [4, 10, 14],    hit: [1],    dmg: 13, reach: [-10, 120], depth: 40, knock: 17, hitstun: 32, meter: 9, step: 46, chain: {}, sfx: 'heavy', shake: 7 },
       // air moves (Space then J / K). air: true = lasts until landing; slam = shockwave when it lands
       jumpKick: { frames: ['kick0', 'kick1'],               durs: [4, 999],       hit: [1],    dmg: 9,  reach: [0, 115], depth: 40, knock: 7,   hitstun: 24, meter: 6, air: true, chain: {}, sfx: 'heavy', shake: 3 },
-      dive:     { frames: ['heavy1', 'heavy2'],             durs: [6, 999],       hit: [1],    dmg: 12, reach: [-20, 110], depth: 44, knock: 4, hitstun: 28, meter: 8, air: true, dive: 15,
-                  slam: { dmg: 10, radius: 170, depth: 70, knock: 9, launch: 7, hitstun: 30, meter: 6, sfx: 'boom', shake: 12 }, chain: {}, sfx: 'heavy', shake: 5 }
+      // dive: wind-up (fist raised) -> plunge (heavy1 punch pose rotated fist-down, rot = radians per frame) -> GROUND SMASH
+      dive:     { frames: ['up2', 'heavy1'],                durs: [7, 999],       hit: [1],    dmg: 12, reach: [-30, 90], depth: 44, knock: 4, hitstun: 28, meter: 8, air: true, dive: 26,
+                  rot: [0, 1.45], landPose: 'down2', landTicks: 16,
+                  slam: { dmg: 14, radius: 190, depth: 80, knock: 12, launch: 11, hitstun: 36, meter: 8, sfx: 'boom', shake: 22, hitstop: 9, crack: 70 }, chain: {}, sfx: 'heavy', shake: 5 }
     },
     starters: { light: 'light1', heavy: 'heavy1' },
     dashMoves: { light: 'dashStrike', heavy: 'shoulder' },      // J / K during (or right after) a dash
     airMoves: { light: 'jumpKick', heavy: 'dive' },             // J / K while airborne
-    dash: { ticks: 15, speed: 13, cooldown: 30, iframes: 15 },  // Shift: ~0.25 s burst, ~0.5 s cooldown
+    dash: { ticks: 22, speed: 15, cooldown: 26, iframes: 19 },  // Shift: ~0.37 s burst (~1.7x v4 distance), i-frames for the first 19 ticks, ~0.45 s cooldown
     jump: { vz: 13.5, air: 0.9 },                               // Space: launch speed, air control (x speed factor)
     transform: {
       phraseText: 'Balwisyall Nescell gungnir tron',     // shown on screen while the phrase mp3 plays
