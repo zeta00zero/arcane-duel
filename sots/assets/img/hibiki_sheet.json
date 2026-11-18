@@ -1,0 +1,24 @@
+{
+ "cell": [
+  231,
+  258
+ ],
+ "anchor": [
+  126,
+  251
+ ],
+ "frames": {
+  "idle": 0,
+  "walk1": 1,
+  "light1": 2,
+  "light2": 3,
+  "heavy1": 4,
+  "heavy2": 5,
+  "walk2": 6,
+  "light3": 7,
+  "hit": 8,
+  "ko": 9,
+  "ult": 10,
+  "pose": 11
+ }
+}
