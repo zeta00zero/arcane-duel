@@ -51,7 +51,7 @@ SOTS_DATA.characters = {
     },
     // Songs: previewStart / previewLength in seconds (preview on the song select screen)
     songs: [
-      { id: 'song1', title: 'Song 1 (placeholder)', artist: 'Hibiki', file: 'assets/audio/hibiki_song1.mp3', previewStart: 12, previewLength: 15 },
+      { id: 'song1', title: 'Song 1', artist: 'Hibiki', file: 'assets/audio/hibiki_song1.mp3', previewStart: 12, previewLength: 15 },
       { id: 'song2', title: 'Song 2 (placeholder)', artist: 'Hibiki', file: 'assets/audio/hibiki_song2.mp3', previewStart: 12, previewLength: 15 },
       { id: 'song3', title: 'Song 3 (placeholder)', artist: 'Hibiki', file: 'assets/audio/hibiki_song3.mp3', previewStart: 12, previewLength: 15 }
     ]
