@@ -35,7 +35,11 @@ function tinted(key, color) {   // silhouette version of a sheet (hit flash, win
 }
 function preloadAll() {
   const list = ['assets/img/title_key.jpg', 'assets/img/bg_vn_city.jpg'];
-  Object.keys(META).forEach(k => list.push(sheetSrc(k)));
+  // only the sheets the data actually uses (old unused sheets in sprite_meta.js are not downloaded)
+  const used = new Set();
+  Object.values(D.characters).forEach(c => Object.values(c.sprites).forEach(sp => used.add(sp.sheet)));
+  Object.values(D.enemies).forEach(e => used.add(e.sheet));
+  used.forEach(k => META[k] && list.push(sheetSrc(k)));
   Object.values(D.characters).forEach(c => Object.values(c.portraits).forEach(p => list.push(p)));
   D.missions.forEach(m => { list.push(m.vnBackground, m.stage.background.far, m.stage.background.near); });
   return Promise.all(list.map(loadImg));
@@ -45,10 +49,34 @@ function drawFrame(key, frame, x, y, scale = 1, flip = false, src = null, sy = 1
   const m = META[key]; if (!m) return;
   const im = src || img(sheetSrc(key)); if (!im || (im.complete === false)) return;
   const i = typeof frame === 'number' ? frame : (m.frames[frame] ?? 0);
-  const [cw, ch] = m.cell, [ax, ay] = m.anchor;
+  const [cw, ch] = m.cell, [ax, ay] = m.anchor, cols = m.cols || 1e9;
   ctx.save(); ctx.translate(x, y); ctx.scale(flip ? -scale : scale, scale * sy);
-  ctx.drawImage(im, i * cw, 0, cw, ch, -ax, -ay, cw, ch); ctx.restore();
+  ctx.drawImage(im, (i % cols) * cw, Math.floor(i / cols) * ch, cw, ch, -ax, -ay, cw, ch); ctx.restore();
 }
+// ---------- frame animation (data-driven, see js/data/characters.js) ----------
+// anim = { frames:[...], durs:[ticks...] | fps, loop }. Zero-length frames are skipped (used for 'air' frames).
+function animFrame(anim, t) {
+  const n = anim.frames.length; if (n === 1) return anim.frames[0];
+  const durs = anim.durs || anim.frames.map(() => 60 / (anim.fps || 8));
+  const total = durs.reduce((a, b) => a + b, 0);
+  if (anim.loop !== false) t = ((t % total) + total) % total;
+  let acc = 0;
+  for (let i = 0; i < n; i++) { acc += durs[i]; if (t < acc) return anim.frames[i]; }
+  return anim.frames[n - 1];
+}
+// stride-driven cycle: frame chosen from distance travelled so the feet don't slide
+const strideFrame = (anim, dist, scale) => anim.frames[Math.floor(dist / (anim.stride * scale) * anim.frames.length) % anim.frames.length];
+// derive startup / active / recovery (ticks) from a move's per-frame durations and strike frames
+function prepMoves(c) {
+  for (const m of Object.values(c.moves)) {
+    if (!m.frames || !m.durs) continue;
+    const hits = m.hit || [1], first = Math.min(...hits), last = Math.max(...hits);
+    m.startup = m.durs.slice(0, first).reduce((a, b) => a + b, 0);
+    m.active = m.durs.slice(first, last + 1).reduce((a, b) => a + b, 0);
+    m.recovery = m.durs.slice(last + 1).reduce((a, b) => a + b, 0);
+  }
+}
+Object.values(D.characters).forEach(prepMoves);
 
 // ---------- screens ----------
 let curScreen = null;
@@ -160,6 +188,7 @@ const VN = {
   enter() {
     show('scr-vn'); this.lines = G.mission.dialogue; this.i = -1;
     $('vn-bg').src = G.mission.vnBackground; this.next();
+    preloadVideo(G.char.transform.video);          // big video: start downloading while the story plays
   },
   next() {
     if (this.typing) { this.finishTyping(); return; }
@@ -182,14 +211,33 @@ $('scr-vn').addEventListener('click', e => { if (e.target.id === 'vn-skip') { Au
 // VIDEO PLAYER (transformation / ultimate)
 // ============================================================
 const vid = $('vid'); AudioManager.registerVideo(vid);
+const vidLoading = $('vid-loading');
+const VIDEO_WAIT_MS = 25000;            // how long to wait for a slow video before giving up (only if nothing has loaded)
 let vidDone = null;
+const sameSrc = src => vid.src && decodeURI(vid.src).endsWith(src);
+// start downloading a video early (e.g. the transformation video during the VN / phrase) so it is ready to play
+function preloadVideo(src) {
+  if (!src || sameSrc(src) || (curScreen === 'scr-video' && !vid.paused)) return;
+  vid.preload = 'auto'; vid.src = src; vid.load();
+}
 function playVideo(src, done) {
   show('scr-video'); vidDone = done; let finished = false;
-  const fin = () => { if (finished) return; finished = true; vid.pause(); vid.onended = vid.onerror = null; clearTimeout(guard); const d = vidDone; vidDone = null; d && d(); };
-  vid.onended = fin; vid.onerror = () => { console.warn('video failed', src); fin(); };
-  vid.muted = false; vid.src = src; vid.currentTime = 0;
+  const showLoading = on => vidLoading && vidLoading.classList.toggle('on', on);
+  const fin = () => {
+    if (finished) return; finished = true; vid.pause(); showLoading(false);
+    vid.onended = vid.onerror = vid.onwaiting = vid.onplaying = vid.oncanplay = null; clearTimeout(guard);
+    const d = vidDone; vidDone = null; d && d();
+  };
+  vid.onended = fin;
+  vid.onerror = () => { console.warn('video failed', src); fin(); };        // real errors still skip
+  vid.onwaiting = () => showLoading(true);
+  vid.onplaying = vid.oncanplay = () => { if (vid.readyState >= 3) showLoading(false); };
+  vid.muted = false;
+  if (!sameSrc(src)) vid.src = src;                                        // reuse a preloaded video
+  try { vid.currentTime = 0; } catch (e) {}
+  showLoading(vid.readyState < 3);
   vid.play().catch(() => { vid.muted = true; vid.play().catch(fin); });
-  const guard = setTimeout(() => { if (vid.readyState < 2) fin(); }, 8000);
+  const guard = setTimeout(() => { if (vid.readyState < 2) { console.warn('video too slow, skipping', src); fin(); } }, VIDEO_WAIT_MS);
   playVideo.skip = fin;
 }
 $('vid-skip').addEventListener('click', () => playVideo.skip && playVideo.skip());
@@ -202,6 +250,7 @@ const Transform = {
   enter() {
     show(null); this.phase = 'phrase'; this.t = 0; this.textN = 0; this.parts = [];
     const tr = G.char.transform;
+    preloadVideo(tr.video);
     AudioManager.playVoice(tr.phraseAudio).then(() => { if (this.phase === 'phrase') this.toShine(); });
     this.voiceStart = performance.now();
   },
@@ -297,7 +346,12 @@ const Fight = {
     this.texts.forEach(t => { t.y -= 1; t.life--; }); this.texts = this.texts.filter(t => t.life > 0);
     if (this.hitstop > 0) { this.hitstop--; return; }
     if (this.state === 'play') this.stats.frames++;
-    this.updatePlayer(); this.updateWaves(); this.enemies.forEach(e => this.updateEnemy(e));
+    this.updatePlayer(); this.updateWaves();
+    this.enemies.forEach(e => {
+      const ox = e.x, oy = e.y; this.updateEnemy(e);
+      const d = Math.hypot(e.x - ox, e.y - oy);
+      if (e.state === 'walk' || e.state === 'enter') { e.wd = (e.wd || 0) + d; e.still = d < 0.3 ? (e.still || 0) + 1 : 0; }
+    });
     this.enemies = this.enemies.filter(e => !e.gone);
     this.updateCamera();
     if (this.state === 'clear' && --this.endT <= 0) this.showClear();
@@ -316,8 +370,14 @@ const Fight = {
     // physics
     p.x += p.vx; p.vx *= 0.82; if (Math.abs(p.vx) < 0.05) p.vx = 0;
     if (p.z > 0 || p.vz) { p.vz -= GRAV; p.z += p.vz; if (p.z <= 0) { p.z = 0; p.vz = 0; } }
+    if (p.z > 0) p.landT = p.t;                     // time since landing drives down / ko frames
     if (p.state === 'ko' || this.state === 'clear') { this.clampPlayer(); return; }
     if (p.state === 'hit') { if (p.t > 22) this.setP('idle'); this.clampPlayer(); return; }
+    if (p.state === 'down') {                         // knockdown: fly, lie, get up
+      const a = c.anims.down, lie = a.durs[1], up = a.durs[2];
+      if (p.z <= 0 && p.t - (p.landT || 0) > lie + up) { this.setP('idle'); p.inv = Math.max(p.inv, 30); }
+      this.clampPlayer(); return;
+    }
     if (p.state === 'ultpose') { if (p.t > 26) this.startUltVideo(); return; }
     if (p.state === 'attack') {
       const m = c.moves[p.move]; p.mt++;
@@ -332,16 +392,19 @@ const Fight = {
       this.clampPlayer(); return;
     }
     // idle / walk
+    if (p.ultQ && this.state === 'play') { this.tryUlt(); if (p.state === 'ultpose') return; }
     const b = p.buf[0];
     if (b && c.starters[b.b]) { p.buf = []; this.startMove(c.starters[b.b]); return; }
     let dx = (Input.isDown('right') ? 1 : 0) - (Input.isDown('left') ? 1 : 0);
     let dy = (Input.isDown('down') ? 1 : 0) - (Input.isDown('up') ? 1 : 0);
     if (this.state !== 'play') dx = dy = 0;
+    const ox = p.x, oy = p.y;
     p.x += dx * S.speed; p.y += dy * S.depthSpeed;
     if (dx) p.face = dx;
     const moving = dx || dy;
-    if (moving && p.state !== 'walk') this.setP('walk'); else if (!moving && p.state !== 'idle') this.setP('idle');
+    if (moving && p.state !== 'walk') { this.setP('walk'); p.wd = 0; } else if (!moving && p.state !== 'idle') this.setP('idle');
     this.clampPlayer();
+    p.wd = (p.wd || 0) + Math.hypot(p.x - ox, p.y - oy);   // walk anim advances by real distance moved
   },
   clampPlayer() {
     const p = this.p, st = this.st;
@@ -349,7 +412,7 @@ const Fight = {
     const lo = this.lock ? this.lock + 40 : 40, hi = this.lock ? this.lock + W - 40 : st.length - 40;
     p.x = clamp(p.x, Math.max(lo, this.camX + 30), Math.min(hi, this.camX + W - 30));
   },
-  setP(s) { this.p.state = s; this.p.t = 0; },
+  setP(s) { this.p.state = s; this.p.t = 0; this.p.landT = 0; },
   startMove(id) { const p = this.p; p.state = 'attack'; p.move = id; p.mt = 0; p.t = 0; p.hitIds = new Set(); },
   checkHits(m) {
     const p = this.p;
@@ -389,7 +452,9 @@ const Fight = {
   },
   tryUlt() {
     const p = this.p, u = this.c.ultimate;
+    if (p.meter >= u.meterMax && (p.state === 'hit' || p.state === 'down')) { p.ultQ = true; return; }   // buffered: fires on recovery
     if (p.meter < u.meterMax || !['idle', 'walk', 'attack'].includes(p.state)) { this.meterShake = 15; return; }
+    p.ultQ = false;
     p.meter = 0; this.setP('ultpose'); AudioManager.sfx('shine'); this.flash = 10; this.flashColor = '#ffd36a';
   },
   startUltVideo() {
@@ -405,13 +470,14 @@ const Fight = {
       this.p.meter = 0; this.hitstop = 0;
     });
   },
-  hurtPlayer(dmg, dir, shake) {
-    const p = this.p; if (p.inv > 0 || p.state === 'ko' || this.state !== 'play') return;
+  hurtPlayer(dmg, dir, shake, knockdown) {
+    const p = this.p; if (p.inv > 0 || p.state === 'ko' || p.state === 'ultpose' || this.state !== 'play') return;
     if (G.debug.god) dmg = 0;
     p.hp = Math.max(0, p.hp - dmg); this.stats.dmgTaken += dmg; p.inv = this.c.stats.invuln; p.vx = dir * 6; p.buf = [];
     this.shake = Math.max(this.shake, shake || 6); this.flash = 6; this.flashColor = '#ff3030'; AudioManager.sfx('hurt');
     this.spark(p.x, p.y - 110, 0.8);
     if (p.hp <= 0) { this.setP('ko'); p.vz = 6; p.z = 1; this.state = 'ko'; this.endT = 110; AudioManager.duck(0.3); }
+    else if (knockdown && Math.random() < (knockdown === true ? 1 : knockdown) && this.c.anims.down) { this.setP('down'); p.vz = 5; p.z = 1; p.vx = dir * 7; const a = this.c.anims.down; p.inv = Math.max(p.inv, 40 + a.durs[1] + a.durs[2]); }
     else this.setP('hit');
   },
   // ---------------- enemies ----------------
@@ -427,7 +493,7 @@ const Fight = {
     if (this.wave && this.pending.every(s => s.done) && this.enemies.length === 0) {
       const last = this.waveIdx === st.waves.length - 1;
       this.wave = null; this.lock = null; this.waveIdx++;
-      if (last) { this.state = 'clear'; this.endT = 170; this.setP('ult'); this.banner = { text: 'MISSION CLEAR!', sub: '', t: 0, dur: 999 }; AudioManager.sfx('confirm'); }
+      if (last) { this.state = 'clear'; this.endT = 170; this.setP('victory'); this.banner = { text: 'MISSION CLEAR!', sub: '', t: 0, dur: 999 }; AudioManager.sfx('confirm'); }
       else this.goArrow = 1;
     }
   },
@@ -451,6 +517,8 @@ const Fight = {
     if (e.state === 'down') { if (e.t > 40) { e.state = 'walk'; e.t = 0; e.cd = rnd(40, 70); } return; }
     if (e.state === 'hit') { if (e.t > e.stun) { e.state = 'walk'; e.t = 0; } return; }
     const L = this.lock ?? this.camX;
+    // once in the arena, keep enemies inside the locked screen (prevents a knocked-back / spaced-out enemy softlocking the wave offscreen)
+    if (this.lock != null && e.state !== 'enter') e.x = clamp(e.x, L + 40, L + W - 40);
     e.offscreen = e.x < L - 20 || e.x > L + W + 20;
     if (e.state === 'enter') { e.x += e.face * def.speed * 1.6; if (!e.offscreen && e.x > L + 60 && e.x < L + W - 60) { e.state = 'walk'; e.t = 0; } return; }
     const dx = p.x - e.x, dy = p.y - e.y;
@@ -472,7 +540,7 @@ const Fight = {
       e.vx = e.face * A.lungeSpeed * (1 - e.t / A.lunge);
       if (def.hops) e.z = Math.sin(e.t / A.lunge * Math.PI) * 40;
       const reach = def.width * 0.5 + 34 + (def.boss ? 30 : 0);
-      if (Math.abs(p.x - e.x) < reach && Math.abs(p.y - e.y) < 28 + (def.boss ? 20 : 0) && p.z < 40) this.hurtPlayer(A.dmg, e.face, A.shake);
+      if (Math.abs(p.x - e.x) < reach && Math.abs(p.y - e.y) < 28 + (def.boss ? 20 : 0) && p.z < 40) this.hurtPlayer(A.dmg, e.face, A.shake, A.knockdown);
       if (e.t > A.lunge) { e.state = 'recover'; e.t = 0; e.z = 0; }
       return;
     }
@@ -513,7 +581,7 @@ const Fight = {
     this.drawBG();
     const cam = Math.round(this.camX);
     const list = [...this.enemies.map(e => ({ y: e.y, e })), { y: this.p.y + 0.1, p: this.p }].sort((a, b) => a.y - b.y);
-    for (const o of list) { const x = (o.e || o.p).x - cam, y = (o.e || o.p).y; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(x, y, o.e ? o.e.def.width * 0.55 : 45, o.e ? 10 + o.e.def.width * 0.05 : 11, 0, 0, Math.PI * 2); ctx.fill(); }
+    for (const o of list) { const x = (o.e || o.p).x - cam, y = (o.e || o.p).y; ctx.fillStyle = `rgba(0,0,0,${this.st.background.shadow ?? 0.35})`; ctx.beginPath(); ctx.ellipse(x, y, o.e ? o.e.def.width * 0.55 : 45, o.e ? 10 + o.e.def.width * 0.05 : 11, 0, 0, Math.PI * 2); ctx.fill(); }
     for (const o of list) o.e ? this.drawEnemy(o.e, cam) : this.drawPlayer(cam);
     this.drawFx(cam);
     ctx.restore();
@@ -522,29 +590,33 @@ const Fight = {
   },
   drawBG() {
     const bg = this.st.background, far = img(bg.far), near = img(bg.near), cam = this.camX;
-    const fo = -(cam * 0.2) % W;
-    for (let x = fo; x < W; x += W) ctx.drawImage(far, x, -60, W, H);
+    const fw = far.naturalWidth ? far.width * (H / far.height) : W, fy = bg.farY ?? -60;   // far layer keeps its aspect (may be a mirrored double-width tile)
+    const fo = -(cam * 0.2) % fw;
+    for (let x = fo; x < W; x += fw) ctx.drawImage(far, x, fy, fw, H);
     if (near.naturalWidth) { const nw = near.width, o = -(cam % nw); for (let x = o; x < W; x += nw) ctx.drawImage(near, x, bg.nearY); }
   },
   drawPlayer(cam) {
-    const p = this.p, c = this.c;
-    let frame = 'idle', sy = 1, anim = c.anims.idle;
-    if (p.state === 'walk') { anim = c.anims.walk; frame = anim.frames[Math.floor(p.t / 60 * anim.fps) % anim.frames.length]; }
-    else if (p.state === 'attack') frame = c.moves[p.move].frame;
-    else if (p.state === 'hit') frame = c.anims.hit.frames[0];
-    else if (p.state === 'ko') frame = c.anims.ko.frames[0];
-    else if (p.state === 'ultpose' || p.state === 'ult') frame = c.anims.ult.frames[0];
-    else sy = 1 + Math.sin(p.t * 0.08) * 0.015;
-    const sp = c.sprites.transformed, x = p.x - cam, y = p.y - p.z;
-    if (p.inv > 0 && p.state !== 'ko' && Math.floor(p.t / 3) % 2) ctx.globalAlpha = 0.45;
+    const p = this.p, c = this.c, A = c.anims, sp = c.sprites.transformed;
+    let frame;
+    if (p.state === 'walk') frame = strideFrame(A.walk, p.wd || 0, sp.scale);
+    else if (p.state === 'attack') { const m = c.moves[p.move]; frame = animFrame({ frames: m.frames, durs: m.durs, loop: false }, p.mt - 1); }
+    else if ((p.state === 'down' || p.state === 'ko') && A[p.state]) { const a = A[p.state]; frame = p.z > 0 && a.air ? a.air : animFrame(a, p.t - (p.landT || 0)); }
+    else if (A[p.state]) frame = animFrame(A[p.state], p.t);
+    else frame = animFrame(A.idle, p.t);
+    const x = p.x - cam, y = p.y - p.z;
+    if (p.inv > 0 && p.state !== 'ko' && p.state !== 'down' && Math.floor(p.t / 3) % 2) ctx.globalAlpha = 0.45;
     if (p.state === 'ultpose') { drawRays(x, y - 110, 0.6, this.t); }
-    drawFrame(sp.sheet, frame, x, y, sp.scale, p.face < 0, null, sy);
+    const rim = this.st.background.rim; if (rim) ctx.filter = `drop-shadow(0 0 1.5px ${rim})`;   // dark rim so white armour reads on bright stages
+    drawFrame(sp.sheet, frame, x, y, sp.scale, p.face < 0);
+    ctx.filter = 'none';
     ctx.globalAlpha = 1;
   },
   drawEnemy(e, cam) {
     const def = e.def, flip = def.facesRight ? e.face < 0 : e.face > 0;
-    let x = e.x - cam, y = e.y - e.z, sy = 1, rot = 0;
-    if (e.state === 'walk' || e.state === 'enter') { if (def.hops) { y -= Math.abs(Math.sin(e.t * 0.12)) * 16; sy = 1 + Math.sin(e.t * 0.24) * 0.06; } else { rot = Math.sin(e.t * 0.15 + e.seed) * 0.05; } }
+    let x = e.x - cam, y = e.y - e.z, sy = 1, rot = 0, fr = def.frame;
+    const wa = def.anims && def.anims.walk;
+    if (wa && (e.state === 'walk' || e.state === 'enter') && (e.still || 0) < 10) fr = strideFrame(wa, e.wd || 0, def.scale);
+    if (e.state === 'walk' || e.state === 'enter') { if (def.hops) { y -= Math.abs(Math.sin(e.t * 0.12)) * 16; sy = 1 + Math.sin(e.t * 0.24) * 0.06; } else if (!wa) { rot = Math.sin(e.t * 0.15 + e.seed) * 0.05; } }
     if (e.state === 'windup') { x += Math.sin(e.t * 1.7) * 3; sy = 1 - 0.06 * Math.min(1, e.t / def.attack.windup); }
     if (e.state === 'hit') x += Math.sin(e.t * 2) * 3;
     if (e.state === 'air') rot = -e.face * Math.min(1.2, e.t * 0.08);
@@ -554,13 +626,15 @@ const Fight = {
       const k = e.t, h = this.eHeight(e) / 0.9 + 10;
       const cut = k < 12 ? 0 : Math.min(1, (k - 12) / 48);
       ctx.beginPath(); ctx.rect(x - 400, y - h + h * cut, 800, h * (1 - cut) + 4); ctx.clip();
-      drawFrame(def.sheet, def.frame, x, y, def.scale, flip);
-      const dark = tinted(def.sheet, '#2a2622'); ctx.globalAlpha = Math.min(1, k / 10); if (dark) drawFrame(def.sheet, def.frame, x, y, def.scale, flip, dark);
+      drawFrame(def.sheet, fr, x, y, def.scale, flip);
+      const dark = tinted(def.sheet, '#2a2622'); ctx.globalAlpha = Math.min(1, k / 10); if (dark) drawFrame(def.sheet, fr, x, y, def.scale, flip, dark);
       ctx.restore(); ctx.globalAlpha = 1; return;
     }
-    drawFrame(def.sheet, def.frame, x, y, def.scale, flip, null, sy);
-    if (e.state === 'windup') { const r = tinted(def.sheet, '#ff2a2a'); ctx.globalAlpha = 0.25 + 0.3 * Math.abs(Math.sin(e.t * 0.35)); r && drawFrame(def.sheet, def.frame, x, y, def.scale, flip, r, sy); ctx.globalAlpha = 1; }
-    if (e.flash) { const w = tinted(def.sheet, '#ffffff'); ctx.globalAlpha = e.flash / 6 * 0.85; w && drawFrame(def.sheet, def.frame, x, y, def.scale, flip, w, sy); ctx.globalAlpha = 1; }
+    const rim = this.st.background.rim; if (rim) ctx.filter = `drop-shadow(0 0 1.5px ${rim})`;
+    drawFrame(def.sheet, fr, x, y, def.scale, flip, null, sy);
+    ctx.filter = 'none';
+    if (e.state === 'windup') { const r = tinted(def.sheet, '#ff2a2a'); ctx.globalAlpha = 0.25 + 0.3 * Math.abs(Math.sin(e.t * 0.35)); r && drawFrame(def.sheet, fr, x, y, def.scale, flip, r, sy); ctx.globalAlpha = 1; }
+    if (e.flash) { const w = tinted(def.sheet, '#ffffff'); ctx.globalAlpha = e.flash / 6 * 0.85; w && drawFrame(def.sheet, fr, x, y, def.scale, flip, w, sy); ctx.globalAlpha = 1; }
     ctx.restore();
     if (!def.boss && e.hp < e.hpMax && !e.dead) { const bw = 60; ctx.fillStyle = '#000a'; ctx.fillRect(x - bw / 2, y - this.eHeight(e) - 18, bw, 6); ctx.fillStyle = '#7dff6a'; ctx.fillRect(x - bw / 2, y - this.eHeight(e) - 18, bw * Math.max(0, e.hp / e.hpMax), 6); }
   },
