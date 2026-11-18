@@ -15,13 +15,14 @@ html, body { margin: 0; height: 100%; background: #0a0710; overflow: hidden; fon
 .bar { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: center; gap: 30px; }
 
 /* title */
-#scr-title { background: url('../assets/img/title_key.jpg') center/cover; }
-.title-logo { position: absolute; left: 70px; top: 90px; transform: rotate(-4deg); }
+#scr-title { background: #0a0c22 url('../assets/img/title_v5.jpg') center/cover; }
+.title-logo { position: absolute; left: 27px; top: 178px; width: 775px; height: 215px; background: url('../assets/img/title_logo.png') left top/contain no-repeat; }
+.title-logo .t1, .title-logo .t2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }   /* text kept for screen readers; logo is the image */
 .title-logo .t1 { font-size: 46px; color: #ffe9c2; text-shadow: 0 3px 0 #7a2a08; }
-.title-logo .t2 { font-size: 120px; line-height: .9; font-weight: 700; color: #fff; text-shadow: 0 6px 0 #e0561a, 0 10px 0 #7a2a08, 0 0 40px #ffb04a; }
-.menu { position: absolute; left: 110px; top: 400px; display: none; flex-direction: column; gap: 18px; align-items: flex-start; }
+.title-logo .t2 { font-size: 112px; line-height: .9; font-weight: 700; color: #fff; text-shadow: 0 6px 0 #e0561a, 0 10px 0 #7a2a08, 0 0 40px #ffb04a; }
+.menu { position: absolute; left: 110px; top: 440px; display: none; flex-direction: column; gap: 18px; align-items: flex-start; }
 .menu.on { display: flex; }
-.press { position: absolute; left: 110px; top: 430px; font-size: 32px; animation: blink 1.1s infinite; text-shadow: 0 3px 0 #000; }
+.press { position: absolute; left: 90px; top: 450px; font-size: 32px; animation: blink 1.1s infinite; text-shadow: 0 3px 0 #000; }
 .foot { position: absolute; bottom: 14px; right: 20px; font-size: 16px; opacity: .7; }
 @keyframes blink { 50% { opacity: .2; } }
 

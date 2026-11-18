@@ -31,6 +31,8 @@
     launch: { f: 180, f2: 900, dur: 0.2, type: 'sawtooth', noise: 0.4, vol: 0.45 },
     whiff: { f: 900, f2: 400, dur: 0.06, type: 'triangle', noise: 0.3, vol: 0.12 },
     hurt: { f: 300, f2: 90, dur: 0.22, type: 'square', noise: 0.3, vol: 0.5 },
+    heal: { f: 523, f2: 1568, dur: 0.45, type: 'triangle', noise: 0, vol: 0.28 },
+    dash: { f: 300, f2: 900, dur: 0.16, type: 'sine', noise: 0.5, vol: 0.18 },
     dust: { f: 120, f2: 40, dur: 0.4, type: 'triangle', noise: 0.8, vol: 0.35 },
     select: { f: 880, f2: 1320, dur: 0.07, type: 'square', noise: 0, vol: 0.18 },
     confirm: { f: 660, f2: 1760, dur: 0.18, type: 'square', noise: 0, vol: 0.22 },
