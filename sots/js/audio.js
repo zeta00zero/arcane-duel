@@ -39,11 +39,24 @@
     shine: { f: 1200, f2: 2400, dur: 0.6, type: 'sine', noise: 0.05, vol: 0.3 },
     boom: { f: 90, f2: 30, dur: 0.7, type: 'sawtooth', noise: 0.9, vol: 0.7 },
     thump: { f: 120, f2: 34, dur: 0.3, type: 'sine', noise: 0.12, vol: 0.75 },   // low body under heavy hits / finishers
+    pick: { seq: [[784, 0, 0.09], [1175, 0.08, 0.1], [1568, 0.16, 0.32]], type: 'triangle', vol: 0.3, sparkle: 0.06 },   // character chosen: rising 3-note chime
     alarm: { f: 700, f2: 950, dur: 0.35, type: 'square', noise: 0, vol: 0.2 }
   };
   // opts.pitch: frequency multiplier (hits use a small random variance so repeats don't sound identical)
   function sfx(name, opts) {
     ensureCtx(); if (!ctx) return; const s = SFX[name]; if (!s) return;
+    if (s.seq) {                     // short note sequence: [freq, start offset s, duration s]
+      const t0 = ctx.currentTime;
+      s.seq.forEach(([f, off, d]) => ['triangle', 'square'].forEach((ty, k) => {
+        const g = ctx.createGain(), o = ctx.createOscillator(), t = t0 + off, v = s.vol * (k ? 0.18 : 1);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.01); g.gain.exponentialRampToValueAtTime(0.001, t + d); g.connect(sfxGain);
+        o.type = ty; o.frequency.setValueAtTime(f * (k ? 2 : 1), t); o.connect(g); o.start(t); o.stop(t + d + 0.02);
+      }));
+      if (s.sparkle) { const n = ctx.createBufferSource(), ng = ctx.createGain(), hp = ctx.createBiquadFilter(), t = t0 + s.seq[s.seq.length - 1][1];
+        n.buffer = noiseBuf(0.35); hp.type = 'highpass'; hp.frequency.value = 6000; ng.gain.setValueAtTime(s.sparkle, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        n.connect(hp); hp.connect(ng); ng.connect(sfxGain); n.start(t); }
+      return;
+    }
     const k = (opts && opts.pitch) || 1, vol = s.vol * ((opts && opts.vol) || 1);
     const t = ctx.currentTime, g = ctx.createGain();
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + s.dur); g.connect(sfxGain);

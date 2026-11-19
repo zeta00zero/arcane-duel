@@ -154,3 +154,37 @@ body, button, input { font-variant-ligatures: none; font-feature-settings: "liga
 .cs-keys { position: absolute; right: 30px; bottom: 18px; display: flex; gap: 28px; z-index: 3; }
 .cs-key { font: 13px 'Marcellus', Georgia, serif; color: #f2d36a; background: linear-gradient(#3a1a10, #1a0a06); border: 1px solid #c88a3a; border-radius: 3px; padding: 3px 8px; cursor: pointer; box-shadow: 0 0 0 1px #000; }
 .cs-key:disabled { opacity: .45; cursor: default; }
+
+/* ---------- v7: CJK fallback (bundled subset of Noto Serif CJK JP for names / move names) ---------- */
+@font-face { font-family: 'SotsCJK'; src: url('../assets/fonts/SotsCJK.woff2') format('woff2'); font-display: swap; }
+.cs-jp, .cs-move .jp { font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'SotsCJK', 'Noto Serif CJK JP', 'Microsoft YaHei', sans-serif; }
+.cs-move .jp { display: block; font-size: 16px; color: #e8c879; margin-top: 2px; letter-spacing: 1px; }
+.cs-move { line-height: 1.15; }
+/* ---------- v7: intro ---------- */
+#scr-intro { background: radial-gradient(ellipse at 50% 55%, #2c2a6a 0%, #15123e 40%, #06050f 100%); overflow: hidden; cursor: pointer; }
+.intro-gate { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; z-index: 5; background: #06050f; }
+.intro-gate .g1 { font-family: 'Marcellus', Georgia, serif; font-size: 34px; letter-spacing: 6px; color: #c9cff0; text-transform: uppercase; }
+.intro-gate .g2 { font-size: 30px; color: #ffe08a; animation: pulse 1.2s infinite alternate; }
+@keyframes pulse { from { opacity: .35 } to { opacity: 1 } }
+.intro-gate.off { display: none; }
+.intro-stage { position: absolute; inset: 0; }
+.intro-stage img { position: absolute; bottom: -20px; height: 560px; opacity: 0; filter: drop-shadow(0 0 18px #000c); }
+.intro-stage.go img { animation: introL .55s cubic-bezier(.2,1.5,.4,1) forwards; animation-delay: var(--d); }
+.intro-stage.go img.r { animation-name: introR; }
+.intro-stage.go img.c { animation-name: introC; height: 700px; }
+@keyframes introL { from { opacity: 0; transform: translateX(-520px) scale(.75); } to { opacity: 1; transform: none; } }
+@keyframes introR { from { opacity: 0; transform: translateX(520px) scale(.75); } to { opacity: 1; transform: none; } }
+@keyframes introC { 0% { opacity: 0; transform: translateY(120px) scale(.6); } 100% { opacity: 1; transform: none; } }
+.intro-stage::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 60%, transparent 40%, #06050fcc 100%); pointer-events: none; }
+.intro-skip { position: absolute; right: 22px; bottom: 14px; font-size: 18px; color: #fff8; z-index: 4; }
+#flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 50; }
+#flash.up { opacity: 1; transition: opacity .28s ease-in; }
+#flash.down { opacity: 0; transition: opacity .9s ease-out; }
+/* ---------- v7: song covers ---------- */
+.song .cover { width: 64px; height: 64px; border-radius: 6px; object-fit: cover; box-shadow: 0 2px 6px #0008; border: 2px solid #fff3; flex: none; }
+.songs-cover-wrap { margin-top: 8px; padding: 6px 10px !important; align-items: center; gap: 16px; background: #0a0716cc; padding: 8px 10px 6px; border-radius: 12px; border: 2px solid #ffe08a66; display: none; }
+.songs-cover-wrap.on { display: flex; }
+.songs-cover-name { font-size: 28px; color: #ffe08a; }
+.song-cover-big { display: block; width: 220px; height: 220px; margin: 10px auto 0; border-radius: 10px; object-fit: cover; box-shadow: 0 6px 20px #000a; border: 3px solid #ffffff40; }
+.song-cover-big { width: 92px !important; height: 92px !important; margin: 0 !important; }
+.intro-stage img.l, .intro-stage img.r { height: 520px; -webkit-mask-image: radial-gradient(ellipse 50% 58% at 50% 46%, #000 62%, transparent 100%); mask-image: radial-gradient(ellipse 50% 58% at 50% 46%, #000 62%, transparent 100%); }

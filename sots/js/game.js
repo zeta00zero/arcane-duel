@@ -41,6 +41,7 @@ function preloadAll() {
   Object.values(D.enemies).forEach(e => used.add(e.sheet));
   used.forEach(k => META[k] && list.push(sheetSrc(k)));
   Object.values(D.characters).forEach(c => Object.values(c.portraits).forEach(p => list.push(p)));
+  Object.values(D.characters).forEach(c => (c.songs || []).forEach(s => s.cover && list.push(s.cover)));
   D.missions.forEach(m => { const b = m.stage.background; list.push(m.vnBackground, ...(b.layers ? b.layers.map(l => l.src) : [b.far, b.near])); });
   return Promise.all(list.map(loadImg));
 }
@@ -103,6 +104,7 @@ function itemIcon(type) {
   return ICONS[type] = c;
 }
 
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // ---------- screens ----------
 let curScreen = null;
 function show(id) {
@@ -132,15 +134,54 @@ document.addEventListener('input', e => {
 // ============================================================
 // TITLE
 // ============================================================
+// menu music (Vitalization) keeps looping across title / mission / character select
+function menuMusic() {
+  const src = D.music && D.music.title, m = AudioManager.musicEl; if (!src) return;
+  if (!(m.src.endsWith(src) && !m.paused)) AudioManager.playMusic(src, { loop: true, start: 0 });
+}
+// INTRO: gate (browser autoplay needs a gesture) -> characters pop in from the sides with the music -> white flash -> title card
+const INTRO_ORDER = ['maria', 'tsubasa', 'shirabe', 'chris', 'kirika', 'kanade', 'miku', 'hibiki'];
+const Intro = {
+  enter() {
+    show('scr-intro'); this.phase = 'gate'; $('intro-gate').classList.remove('off'); $('intro-skip').style.display = 'none';
+    const st = $('intro-stage'); st.classList.remove('go'); st.innerHTML = '';
+    const ros = Object.fromEntries(((D.roster && D.roster.slots) || []).map(r => [r.id, r]));
+    const side = INTRO_ORDER.filter(id => id !== 'hibiki' && ros[id]);
+    side.forEach((id, k) => {           // 3 + 4 split: left side / right side, staggered, overlapping toward the middle
+      const left = k % 2 === 0, slot = Math.floor(k / 2), im = document.createElement('img');
+      im.src = ros[id].art; im.alt = ''; im.className = left ? 'l' : 'r';
+      im.style.setProperty('--d', (0.1 + k * 0.17).toFixed(2) + 's');
+      im.style[left ? 'left' : 'right'] = (-90 + slot * 170) + 'px'; im.style.zIndex = 4 - slot;
+      st.appendChild(im);
+    });
+    if (ros.hibiki) { const im = document.createElement('img'); im.src = ros.hibiki.art; im.alt = ''; im.className = 'c';
+      im.style.setProperty('--d', (0.25 + side.length * 0.17).toFixed(2) + 's'); im.style.left = '50%'; im.style.marginLeft = '-300px'; im.style.zIndex = 9; st.appendChild(im); }
+  },
+  begin() {
+    if (this.phase !== 'gate') return; this.phase = 'pop'; G.unlocked = true; AudioManager.unlock();
+    $('intro-gate').classList.add('off'); $('intro-skip').style.display = '';
+    menuMusic(); $('intro-stage').classList.add('go');
+    this._t = setTimeout(() => this.flash(), 2700);
+  },
+  flash() {
+    if (this.phase === 'flash' || this.phase === 'gate') return; this.phase = 'flash'; clearTimeout(this._t);
+    const f = $('flash'); f.className = 'up'; AudioManager.sfx('shine');
+    setTimeout(() => { go(Title); f.className = 'down'; }, 300);
+  },
+  act() { if (this.phase === 'gate') this.begin(); else if (this.phase === 'pop') this.flash(); },
+  exit() { clearTimeout(this._t); }
+};
+$('scr-intro').addEventListener('click', () => Intro.act());
+
 const Title = {
   enter() {
-    show('scr-title'); AudioManager.stopMusic();
+    show('scr-title'); menuMusic();
     const menu = $('title-menu'), press = $('title-press');
-    if (G.unlocked) { menu.classList.add('on'); press.style.display = 'none'; setFocus([...menu.querySelectorAll('.btn')]); }
+    if (G.started) { menu.classList.add('on'); press.style.display = 'none'; setFocus([...menu.querySelectorAll('.btn')]); }
     else { menu.classList.remove('on'); press.style.display = ''; setFocus([]); }
   },
   unlock() {
-    if (G.unlocked) return; G.unlocked = true; AudioManager.unlock(); AudioManager.sfx('confirm');
+    if (G.started) return; G.started = G.unlocked = true; AudioManager.unlock(); AudioManager.sfx('confirm'); menuMusic();
     $('title-menu').classList.add('on'); $('title-press').style.display = 'none'; setFocus([...$('title-menu').querySelectorAll('.btn')]);
   },
   act(a) {
@@ -148,14 +189,14 @@ const Title = {
     if (a === 'options') { AudioManager.sfx('select'); overlay(optionsHTML('close')); }
   }
 };
-$('scr-title').addEventListener('click', e => { if (!G.unlocked) { Title.unlock(); return; } const b = e.target.closest('[data-act]'); if (b) Title.act(b.dataset.act); });
+$('scr-title').addEventListener('click', e => { if (!G.started) { Title.unlock(); return; } const b = e.target.closest('[data-act]'); if (b) Title.act(b.dataset.act); });
 
 // ============================================================
 // MISSION SELECT
 // ============================================================
 const Missions = {
   enter() {
-    show('scr-missions');
+    show('scr-missions'); menuMusic();
     const list = $('mission-list'); list.innerHTML = '';
     D.missions.forEach((m, i) => {
       const c = D.characters[m.character];
@@ -191,7 +232,7 @@ const CharSelect = {
   // 8-point star: each slot is a tall diamond petal from the shared centre, touching its neighbours edge to edge.
   // Slots go clockwise from the top (SOTS_DATA.roster.slots); geometry from roster.star (screen px).
   enter() {
-    show('scr-chars'); this.t = 0;
+    show('scr-chars'); this.t = 0; this._hov = -1; menuMusic();
     const R = D.roster, S = R.star || { cx: 640, cy: 392, len: 292, inner: 168 };
     this.slots = R.slots.map(s => ({ ...s, c: D.characters[s.id] || null, locked: !D.characters[s.id] || !!s.locked }));
     const n = this.slots.length, half = Math.PI / n, ix = S.inner * Math.sin(half), iy = -S.inner * Math.cos(half);
@@ -201,6 +242,7 @@ const CharSelect = {
     defs.innerHTML = `<filter id="csglow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
       <radialGradient id="csgreen" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="scale(600)"><stop offset="0" stop-color="#7aff6a" stop-opacity=".55"/><stop offset=".55" stop-color="#3ad04a" stop-opacity=".18"/><stop offset="1" stop-color="#3ad04a" stop-opacity="0"/></radialGradient>
       <linearGradient id="cssilver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6fc"/><stop offset=".5" stop-color="#8a90a4"/><stop offset="1" stop-color="#dfe3ee"/></linearGradient>
+      <radialGradient id="csfeatherg" cx=".5" cy=".46" r=".52"><stop offset=".62" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient><mask id="csfeather" maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="url(#csfeatherg)"/></mask>
       <linearGradient id="csfade" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#05061a" stop-opacity=".85"/><stop offset=".45" stop-color="#05061a" stop-opacity="0"/></linearGradient>`;
     const root = svgEl('g', { transform: `translate(${S.cx} ${S.cy})` }, svg);
     // background: faint fan of light, emblem rings + spokes, the selected slot's green wedge
@@ -216,7 +258,9 @@ const CharSelect = {
       const deg = i * 360 / n, g = svgEl('g', { class: 'cs-card' + (s.locked ? ' locked' : '') }, grid); g.style.transform = `rotate(${deg}deg)`;   // inline style: beats the generic .cs-card.sel rule
       const cp = svgEl('clipPath', { id: 'cscp' + i }, defs); svgEl('polygon', { points: poly }, cp);
       svgEl('polygon', { points: poly, fill: s.color || '#3a3a6a', opacity: .55 }, g);
-      const ih = 150 * 2.52; svgEl('image', { href: s.face, x: -75, y: iy - 22 - ih * 0.22, width: 150, height: ih, 'clip-path': `url(#cscp${i})`, preserveAspectRatio: 'xMidYMid slice' }, g);
+      // portrait stays UPRIGHT (counter-rotated) and centred in the wide part of the petal so every face is readable
+      const pc = svgEl('g', { 'clip-path': `url(#cscp${i})` }, g), up = svgEl('g', { transform: `translate(0 ${-S.len * 0.52}) rotate(${-deg})` }, pc);
+      const PS = S.portrait || 172; svgEl('image', { href: s.face, mask: 'url(#csfeather)', x: -PS / 2, y: -PS * 0.40, width: PS, height: PS, preserveAspectRatio: 'xMidYMid slice' }, up);
       svgEl('polygon', { points: poly, fill: 'url(#csfade)', 'clip-path': `url(#cscp${i})` }, g);
       svgEl('polygon', { points: poly, fill: 'none', stroke: '#1c1e2a', 'stroke-width': 8, 'stroke-linejoin': 'round' }, g);     // dark metal frame
       svgEl('polygon', { points: poly, fill: 'none', stroke: 'url(#cssilver)', 'stroke-width': 3.2, 'stroke-linejoin': 'miter' }, g);
@@ -240,7 +284,12 @@ const CharSelect = {
     this.hl.setAttribute('transform', `rotate(${deg})`); this.wedge.setAttribute('transform', `rotate(${deg})`);
     $('cs-name').textContent = s.name; $('cs-jp').textContent = s.jp || '';
     $('cs-blurb').textContent = s.blurb || '';
-    $('cs-move').textContent = s.locked ? 'Coming Soon' : (s.c.ultimate && s.c.ultimate.name) || '';
+    const u = !s.locked && s.c.ultimate;
+    $('cs-move').innerHTML = s.locked ? 'Coming Soon' : u ? `${esc(u.name)}${u.jp ? `<span class="jp">${esc(u.jp)}</span>` : ''}` : '';
+    if (this._hov !== i) {               // cursor just landed on this petal: character's hover cue (Hibiki: 'video project 12')
+      this._hov = i;
+      if (s.hoverVoice) AudioManager.playVoice(s.hoverVoice); else AudioManager.stopVoice();
+    }
     $('cs-prev').innerHTML = !s.locked && s.preview ? `<img src="${s.preview}" alt="">` : '<div class="cs-prev-soon">Coming Soon</div>';
     const art = $('cs-art'), box = art.parentNode; box.classList.toggle('locked', s.locked);
     const src = s.art || (s.c && s.c.portraits.transformed) || '';
@@ -263,11 +312,12 @@ const CharSelect = {
     const s = this.slots[focus.i];
     if (!s || s.locked) { this.hl.classList.remove('deny'); AudioManager.sfx('select'); const g = this.hl; g.style.transition = 'opacity .08s'; g.style.opacity = .2; setTimeout(() => g.style.opacity = 1, 120); return; }
     if (G.char !== s.c) G.song = null;
-    G.char = s.c; AudioManager.sfx('confirm');
+    G.char = s.c; AudioManager.stopVoice(); AudioManager.sfx('pick');
     preloadVideo(charVideos(G.char));          // start the big downloads now (transform first, then ultimate)
     go(Songs);
   },
-  update() { this.t++; }
+  update() { this.t++; },
+  exit() { AudioManager.stopVoice(); }
 };
 $('scr-chars').addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
@@ -285,16 +335,21 @@ const Songs = {
     const list = $('song-list'); list.innerHTML = '';
     c.songs.forEach((s, i) => {
       const el = document.createElement('div'); el.className = 'item song';
-      el.innerHTML = `<div class="eq"><i></i><i></i><i></i></div><div class="grow"><div class="ttl">${s.title}</div><div class="sub">${s.artist} &middot; preview ${s.previewLength}s</div></div><button class="btn small ghost" data-prev="${i}">&#9654; Preview</button>`;
+      el.innerHTML = `<div class="eq"><i></i><i></i><i></i></div>${s.cover ? `<img class="cover" src="${s.cover}" alt="">` : ''}<div class="grow"><div class="ttl">${s.title}</div><div class="sub">${s.artist} &middot; preview ${s.previewLength}s</div></div><button class="btn small ghost" data-prev="${i}">&#9654; Preview</button>`;
       el.addEventListener('click', e => { if (e.target.closest('[data-prev]')) { this.preview(i); return; } focus.i = i; markFocus(); this.preview(i); });
       el.querySelector('[data-prev]').addEventListener('mouseenter', () => this.preview(i));
       list.appendChild(el);
     });
     const sel = Math.max(0, c.songs.findIndex(s => G.song && s.id === G.song.id));
     this.playing = -1;
-    setFocus([...list.children], sel);
+    setFocus([...list.children], sel, k => this.cover(k));
+  },
+  cover(i) {                           // big cover + song name for the focused song (if it has one)
+    const s = G.char.songs[i], w = $('songs-cover-wrap'); w.classList.toggle('on', !!(s && s.cover));
+    if (s && s.cover) { $('songs-cover').src = s.cover; $('songs-cover-name').textContent = s.title; }
   },
   preview(i) {
+    this.cover(i);
     if (this.playing === i) return;
     const s = G.char.songs[i]; this.playing = i; focus.i = i; markFocus();
     [...$('song-list').children].forEach((el, k) => el.classList.toggle('playing', k === i));
@@ -1063,7 +1118,20 @@ const Fight = {
     ctx.font = '700 18px Pixelify'; this.txt(full ? 'ULTIMATE READY  [L]' : 'SONG METER', 128, 112, full ? '#ffe08a' : '#ffd36acc');
     // song
     ctx.textAlign = 'center'; ctx.font = '20px Pixelify';
-    this.txt(`\u266A Now singing: ${G.song.title}`, 640, 30, this.songT > 0 ? '#ffe08a' : '#ffffffaa');
+    const cov = G.song.cover && img(G.song.cover), covOk = cov && cov.complete && cov.naturalWidth;
+    if (this.songT > 0 && covOk) {      // song card for the first 4 s: cover + name, slides down from the top
+      const k = Math.min(1, (240 - this.songT) / 14, this.songT / 14), y = -120 + 150 * (1 - Math.pow(1 - Math.max(0, k), 3));
+      ctx.save(); ctx.globalAlpha = Math.max(0, k);
+      ctx.fillStyle = '#0a0716d8'; ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(470, y - 6, 400, 112, 10); ctx.fill(); ctx.stroke();
+      ctx.drawImage(cov, 480, y + 4, 92, 92); ctx.strokeStyle = '#fff6'; ctx.strokeRect(480, y + 4, 92, 92);
+      ctx.textAlign = 'left'; ctx.font = '18px Pixelify'; ctx.fillStyle = '#ffe08acc'; ctx.fillText('\u266A NOW SINGING', 588, y + 28);
+      ctx.font = '700 30px Pixelify'; ctx.lineWidth = 5; ctx.strokeStyle = '#000'; ctx.strokeText(G.song.title, 588, y + 64); ctx.fillStyle = '#fff'; ctx.fillText(G.song.title, 588, y + 64);
+      ctx.font = '16px Pixelify'; ctx.fillStyle = '#fffa'; ctx.fillText(G.song.artist || '', 588, y + 88);
+      ctx.restore(); ctx.textAlign = 'center'; ctx.font = '20px Pixelify';
+    } else {
+      if (covOk) ctx.drawImage(cov, 640 - ctx.measureText(`\u266A Now singing: ${G.song.title}`).width / 2 - 34, 10, 26, 26);
+      this.txt(`\u266A Now singing: ${G.song.title}`, 640, 30, this.songT > 0 ? '#ffe08a' : '#ffffffaa');
+    }
     // wave / go
     ctx.textAlign = 'right'; ctx.font = '700 24px Pixelify';
     const alive = this.enemies.filter(e => !e.dead).length + this.pending.filter(s => !s.done).length;
@@ -1103,7 +1171,7 @@ const Fight = {
 // scene switching, overlay buttons, keyboard routing, loop
 // ============================================================
 function go(scene) { if (G.scene && G.scene.exit) G.scene.exit(); overlay(null); G.scene = scene; G.log.push(Object.keys(SCENES).find(k => SCENES[k] === scene)); scene.enter(); }
-const SCENES = { Title, Missions, CharSelect, Songs, VN, Transform, Fight };
+const SCENES = { Intro, Title, Missions, CharSelect, Songs, VN, Transform, Fight };
 window.SOTS.SCENES = SCENES; window.SOTS.go = go;
 
 $('scr-overlay').addEventListener('click', e => {
@@ -1128,8 +1196,9 @@ Input.onPress(a => {
     return;
   }
   const s = G.scene;
+  if (s === Intro) { Intro.act(); return; }
   if (s === Title) {
-    if (!G.unlocked) { if (a === 'confirm') Title.unlock(); return; }
+    if (!G.started) { if (a === 'confirm') Title.unlock(); return; }
     if (a === 'up') moveFocus(-1); if (a === 'down') moveFocus(1);
     if (a === 'confirm') focus.items[focus.i].click();
   } else if (s === Missions) {
@@ -1167,5 +1236,5 @@ window.SOTS.debug = {
   state() { const f = Fight; return { scene: G.log[G.log.length - 1], fight: G.scene === Fight ? { state: f.state, hp: f.p.hp, meter: f.p.meter, x: Math.round(f.p.x), wave: f.waveIdx, enemies: f.enemies.length, combo: f.combo, maxCombo: f.stats.maxCombo, hits: f.stats.hits, pstate: f.p.state, lock: f.lock, z: Math.round(f.p.z), hpMax: f.p.hpMax, items: f.items.length, trail: f.p.trail.length, pickups: f.stats.pickups || 0, move: f.p.move } : null, screen: curScreen, overlay: overlayOn() }; }
 };
 
-preloadAll().then(() => { document.fonts && document.fonts.load('20px Pixelify'); go(Title); requestAnimationFrame(frame); });
+preloadAll().then(() => { document.fonts && document.fonts.load('20px Pixelify'); go(Intro); requestAnimationFrame(frame); });
 })();
