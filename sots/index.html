@@ -12,6 +12,14 @@
   <div id="stage">
     <canvas id="game" width="1280" height="720"></canvas>
 
+    <!-- INTRO: tap gate (unlocks audio), then characters pop in, white flash -> title card -->
+    <div class="screen" id="scr-intro">
+      <div id="intro-gate" class="intro-gate"><div class="g1">Songs of the Symphony</div><div class="g2">Click / tap to begin</div></div>
+      <div id="intro-stage" class="intro-stage"></div>
+      <div id="intro-skip" class="intro-skip">Click or press any key to skip</div>
+    </div>
+    <div id="flash"></div>
+
     <!-- TITLE -->
     <div class="screen" id="scr-title">
       <div class="title-logo"><div class="t1">Songs of the</div><div class="t2">Symphony</div></div>
@@ -54,6 +62,7 @@
         <div class="songs-panel">
           <div id="song-list" class="list"></div>
           <div class="hint">Hover or press <b>Preview</b> to hear a short clip. Up/Down + Enter also works.</div>
+          <div id="songs-cover-wrap" class="songs-cover-wrap"><img id="songs-cover" class="song-cover-big" alt=""><div id="songs-cover-name" class="songs-cover-name"></div></div>
         </div>
       </div>
       <div class="bar"><button class="btn" data-act="back">Back</button><button class="btn big" id="song-confirm" data-act="confirm">Confirm</button></div>

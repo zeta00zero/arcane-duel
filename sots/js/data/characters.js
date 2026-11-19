@@ -4,6 +4,8 @@
 //  files with the real ones (same filename) or change paths.
 // ============================================================
 window.SOTS_DATA = window.SOTS_DATA || {};
+// Menu / title music (Vitalization). Reusable later as a gameplay song: add it to a character's songs list.
+SOTS_DATA.music = { title: 'assets/audio/vitalization.mp3' };
 SOTS_DATA.characters = {
   hibiki: {
     id: 'hibiki',
@@ -78,13 +80,13 @@ SOTS_DATA.characters = {
       video: 'assets/video/hibiki_transform.mp4'
     },
     ultimate: {
-      name: 'Ultimate Song Burst',
+      name: "Hibiki Style: Spear's Violent Destruction", jp: '我流・撃槍烈破',
       video: 'assets/video/hibiki_ultimate.mp4',
       damage: 90, bossDamage: 140, meterMax: 140
     },
     // Songs: previewStart / previewLength in seconds (preview on the song select screen)
     songs: [
-      { id: 'song1', title: 'Song 1', artist: 'Hibiki', file: 'assets/audio/hibiki_song1.mp3', previewStart: 12, previewLength: 15 },
+      { id: 'song1', title: 'Gekisō Gungnir', cover: 'assets/img/covers/gekiso_gungnir.webp', artist: 'Hibiki', file: 'assets/audio/hibiki_song1.mp3', previewStart: 12, previewLength: 15 },
       { id: 'song2', title: 'Song 2 (placeholder)', artist: 'Hibiki', file: 'assets/audio/hibiki_song2.mp3', previewStart: 12, previewLength: 15 },
       { id: 'song3', title: 'Song 3 (placeholder)', artist: 'Hibiki', file: 'assets/audio/hibiki_song3.mp3', previewStart: 12, previewLength: 15 }
     ]
@@ -104,21 +106,21 @@ SOTS_DATA.roster = {
   // anything else is shown dimmed as 'Coming Soon'. art = big left-side art, face = diamond portrait
   // (petal portrait; built by tools/build_chars.py into assets/img/chars/), preview = picture in the info panel. Add more slots and the ring spreads them out.
   slots: [
-    { id: 'hibiki',  name: 'Hibiki Tachibana',        jp: '立花 響',     color: '#ff9a2a', art: 'assets/img/chars/hibiki.webp',  face: 'assets/img/chars/hibiki_petal.webp', preview: 'assets/img/chars/hibiki_preview.jpg',
+    { id: 'hibiki',  name: 'Hibiki Tachibana',        jp: '立花 響',     color: '#ff9a2a', art: 'assets/img/chars/hibiki.webp',  face: 'assets/img/chars/hibiki_bust.webp', preview: 'assets/img/chars/hibiki_preview.jpg', hoverVoice: 'assets/audio/hibiki_hover.mp3',
       blurb: 'A cheerful high-school girl who wields the Gungnir Symphogear.' },
-    { id: 'tsubasa', name: 'Tsubasa Kazanari',        jp: '風鳴 翼',     color: '#4a8dff', art: 'assets/img/chars/tsubasa.webp', face: 'assets/img/chars/tsubasa_petal.webp',
+    { id: 'tsubasa', name: 'Tsubasa Kazanari',        jp: '風鳴 翼',     color: '#4a8dff', art: 'assets/img/chars/tsubasa.webp', face: 'assets/img/chars/tsubasa_bust.webp',
       blurb: 'A top idol singer and veteran wielder of the Ame-no-Habakiri Symphogear.' },
-    { id: 'chris',   name: 'Chris Yukine',            jp: '雪音 クリス', color: '#ff3b4a', art: 'assets/img/chars/chris.webp',   face: 'assets/img/chars/chris_petal.webp',
+    { id: 'chris',   name: 'Chris Yukine',            jp: '雪音 クリス', color: '#ff3b4a', art: 'assets/img/chars/chris.webp',   face: 'assets/img/chars/chris_bust.webp',
       blurb: 'A tough, sharp-tongued girl who wields the Ichii-Bal Symphogear.' },
-    { id: 'kanade',  name: 'Kanade Amou',             jp: '天羽 奏',     color: '#ff6a2a', art: 'assets/img/chars/kanade.webp',  face: 'assets/img/chars/kanade_petal.webp',
+    { id: 'kanade',  name: 'Kanade Amou',             jp: '天羽 奏',     color: '#ff6a2a', art: 'assets/img/chars/kanade.webp',  face: 'assets/img/chars/kanade_bust.webp',
       blurb: "Tsubasa's partner in the duo Zwei Wing and the original wielder of Gungnir." },
-    { id: 'miku',    name: 'Miku Kohinata',           jp: '小日向 未来', color: '#a07aff', art: 'assets/img/chars/miku.webp',    face: 'assets/img/chars/miku_petal.webp',
+    { id: 'miku',    name: 'Miku Kohinata',           jp: '小日向 未来', color: '#a07aff', art: 'assets/img/chars/miku.webp',    face: 'assets/img/chars/miku_bust.webp',
       blurb: "Hibiki's best friend and classmate at Lydian Academy." },
-    { id: 'maria',   name: 'Maria Cadenzavna Eve',    jp: 'マリア・カデンツァヴナ・イヴ', color: '#ff7ab8', art: 'assets/img/chars/maria.webp', face: 'assets/img/chars/maria_petal.webp',
+    { id: 'maria',   name: 'Maria Cadenzavna Eve',    jp: 'マリア・カデンツァヴナ・イヴ', color: '#ff7ab8', art: 'assets/img/chars/maria.webp', face: 'assets/img/chars/maria_bust.webp',
       blurb: 'A world-famous singer and the eldest of the F.I.S. Symphogear wielders.' },
-    { id: 'shirabe', name: 'Shirabe Tsukuyomi',       jp: '月読 調',     color: '#ff4aa0', art: 'assets/img/chars/shirabe.webp', face: 'assets/img/chars/shirabe_petal.webp',
+    { id: 'shirabe', name: 'Shirabe Tsukuyomi',       jp: '月読 調',     color: '#ff4aa0', art: 'assets/img/chars/shirabe.webp', face: 'assets/img/chars/shirabe_bust.webp',
       blurb: 'A quiet F.I.S. girl who wields the Shul Shagana Symphogear.' },
-    { id: 'kirika',  name: 'Kirika Akatsuki',         jp: '暁 切歌',     color: '#7ae05a', art: 'assets/img/chars/kirika.webp',  face: 'assets/img/chars/kirika_petal.webp',
+    { id: 'kirika',  name: 'Kirika Akatsuki',         jp: '暁 切歌',     color: '#7ae05a', art: 'assets/img/chars/kirika.webp',  face: 'assets/img/chars/kirika_bust.webp',
       blurb: "An energetic F.I.S. girl who wields the Igalima Symphogear; Shirabe's best friend." }
   ]
 };
