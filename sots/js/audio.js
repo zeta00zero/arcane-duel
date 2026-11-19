@@ -38,14 +38,17 @@
     confirm: { f: 660, f2: 1760, dur: 0.18, type: 'square', noise: 0, vol: 0.22 },
     shine: { f: 1200, f2: 2400, dur: 0.6, type: 'sine', noise: 0.05, vol: 0.3 },
     boom: { f: 90, f2: 30, dur: 0.7, type: 'sawtooth', noise: 0.9, vol: 0.7 },
+    thump: { f: 120, f2: 34, dur: 0.3, type: 'sine', noise: 0.12, vol: 0.75 },   // low body under heavy hits / finishers
     alarm: { f: 700, f2: 950, dur: 0.35, type: 'square', noise: 0, vol: 0.2 }
   };
-  function sfx(name) {
+  // opts.pitch: frequency multiplier (hits use a small random variance so repeats don't sound identical)
+  function sfx(name, opts) {
     ensureCtx(); if (!ctx) return; const s = SFX[name]; if (!s) return;
+    const k = (opts && opts.pitch) || 1, vol = s.vol * ((opts && opts.vol) || 1);
     const t = ctx.currentTime, g = ctx.createGain();
-    g.gain.setValueAtTime(s.vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + s.dur); g.connect(sfxGain);
-    const o = ctx.createOscillator(); o.type = s.type; o.frequency.setValueAtTime(s.f, t);
-    o.frequency.exponentialRampToValueAtTime(Math.max(20, s.f2), t + s.dur); o.connect(g); o.start(t); o.stop(t + s.dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + s.dur); g.connect(sfxGain);
+    const o = ctx.createOscillator(); o.type = s.type; o.frequency.setValueAtTime(s.f * k, t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20, s.f2 * k), t + s.dur); o.connect(g); o.start(t); o.stop(t + s.dur);
     if (s.noise) {
       const n = ctx.createBufferSource(); n.buffer = noiseBuf(s.dur); const ng = ctx.createGain();
       ng.gain.setValueAtTime(s.vol * s.noise, t); ng.gain.exponentialRampToValueAtTime(0.001, t + s.dur);

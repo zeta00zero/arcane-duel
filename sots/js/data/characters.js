@@ -98,14 +98,28 @@ SOTS_DATA.characters = {
 //  transform/ultimate videos) and put her id here.
 // ============================================================
 SOTS_DATA.roster = {
-  columns: 3,                 // grid columns; more slots than fit just scroll
+  title: 'Select your Symphogear',
+  star: { cx: 640, cy: 392, len: 292, inner: 168 },   // petal star geometry (screen px): centre, tip length, side-corner radius
+  // Slots go clockwise round the star starting at the top. id = key in SOTS_DATA.characters -> playable;
+  // anything else is shown dimmed as 'Coming Soon'. art = big left-side art, face = diamond portrait
+  // (petal portrait; built by tools/build_chars.py into assets/img/chars/), preview = picture in the info panel. Add more slots and the ring spreads them out.
   slots: [
-    'hibiki',
-    { locked: true, name: 'Coming Soon' },
-    { locked: true, name: 'Coming Soon' },
-    { locked: true, name: 'Coming Soon' },
-    { locked: true, name: 'Coming Soon' },
-    { locked: true, name: 'Coming Soon' }
+    { id: 'hibiki',  name: 'Hibiki Tachibana',        jp: '立花 響',     color: '#ff9a2a', art: 'assets/img/chars/hibiki.webp',  face: 'assets/img/chars/hibiki_petal.webp', preview: 'assets/img/chars/hibiki_preview.jpg',
+      blurb: 'A cheerful high-school girl who wields the Gungnir Symphogear.' },
+    { id: 'tsubasa', name: 'Tsubasa Kazanari',        jp: '風鳴 翼',     color: '#4a8dff', art: 'assets/img/chars/tsubasa.webp', face: 'assets/img/chars/tsubasa_petal.webp',
+      blurb: 'A top idol singer and veteran wielder of the Ame-no-Habakiri Symphogear.' },
+    { id: 'chris',   name: 'Chris Yukine',            jp: '雪音 クリス', color: '#ff3b4a', art: 'assets/img/chars/chris.webp',   face: 'assets/img/chars/chris_petal.webp',
+      blurb: 'A tough, sharp-tongued girl who wields the Ichii-Bal Symphogear.' },
+    { id: 'kanade',  name: 'Kanade Amou',             jp: '天羽 奏',     color: '#ff6a2a', art: 'assets/img/chars/kanade.webp',  face: 'assets/img/chars/kanade_petal.webp',
+      blurb: "Tsubasa's partner in the duo Zwei Wing and the original wielder of Gungnir." },
+    { id: 'miku',    name: 'Miku Kohinata',           jp: '小日向 未来', color: '#a07aff', art: 'assets/img/chars/miku.webp',    face: 'assets/img/chars/miku_petal.webp',
+      blurb: "Hibiki's best friend and classmate at Lydian Academy." },
+    { id: 'maria',   name: 'Maria Cadenzavna Eve',    jp: 'マリア・カデンツァヴナ・イヴ', color: '#ff7ab8', art: 'assets/img/chars/maria.webp', face: 'assets/img/chars/maria_petal.webp',
+      blurb: 'A world-famous singer and the eldest of the F.I.S. Symphogear wielders.' },
+    { id: 'shirabe', name: 'Shirabe Tsukuyomi',       jp: '月読 調',     color: '#ff4aa0', art: 'assets/img/chars/shirabe.webp', face: 'assets/img/chars/shirabe_petal.webp',
+      blurb: 'A quiet F.I.S. girl who wields the Shul Shagana Symphogear.' },
+    { id: 'kirika',  name: 'Kirika Akatsuki',         jp: '暁 切歌',     color: '#7ae05a', art: 'assets/img/chars/kirika.webp',  face: 'assets/img/chars/kirika_petal.webp',
+      blurb: "An energetic F.I.S. girl who wields the Igalima Symphogear; Shirabe's best friend." }
   ]
 };
 

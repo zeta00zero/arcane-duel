@@ -184,61 +184,90 @@ function drawBGLayer(L, cam) {
 // ============================================================
 // CHARACTER SELECT (grid from SOTS_DATA.roster; scales to any number of slots)
 // ============================================================
-const SILHOUETTE = `<svg viewBox="0 0 100 160" class="cs-sil"><g fill="#000" opacity=".55"><circle cx="50" cy="38" r="26"/><path d="M22 70 Q50 58 78 70 L84 120 L66 122 L64 158 L54 158 L50 124 L46 158 L36 158 L34 122 L16 120 Z"/></g></svg>`;
+const SVGNS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs, parent) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
 const CharSelect = {
   t: 0,
+  // 8-point star: each slot is a tall diamond petal from the shared centre, touching its neighbours edge to edge.
+  // Slots go clockwise from the top (SOTS_DATA.roster.slots); geometry from roster.star (screen px).
   enter() {
     show('scr-chars'); this.t = 0;
-    const R = D.roster || { columns: 3, slots: Object.keys(D.characters) };
-    this.slots = R.slots.map(s => typeof s === 'string' ? { id: s, c: D.characters[s] } : { locked: true, name: s.name || 'Coming Soon' });
-    this.cols = R.columns || 3;
-    const grid = $('cs-grid'); grid.innerHTML = ''; grid.style.gridTemplateColumns = `repeat(${this.cols}, 1fr)`;
+    const R = D.roster, S = R.star || { cx: 640, cy: 392, len: 292, inner: 168 };
+    this.slots = R.slots.map(s => ({ ...s, c: D.characters[s.id] || null, locked: !D.characters[s.id] || !!s.locked }));
+    const n = this.slots.length, half = Math.PI / n, ix = S.inner * Math.sin(half), iy = -S.inner * Math.cos(half);
+    const poly = `0,0 ${-ix},${iy} 0,${-S.len} ${ix},${iy}`;
+    const svg = $('cs-svg'); svg.innerHTML = '';
+    const defs = svgEl('defs', {}, svg);
+    defs.innerHTML = `<filter id="csglow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <radialGradient id="csgreen" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="scale(600)"><stop offset="0" stop-color="#7aff6a" stop-opacity=".55"/><stop offset=".55" stop-color="#3ad04a" stop-opacity=".18"/><stop offset="1" stop-color="#3ad04a" stop-opacity="0"/></radialGradient>
+      <linearGradient id="cssilver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6fc"/><stop offset=".5" stop-color="#8a90a4"/><stop offset="1" stop-color="#dfe3ee"/></linearGradient>
+      <linearGradient id="csfade" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#05061a" stop-opacity=".85"/><stop offset=".45" stop-color="#05061a" stop-opacity="0"/></linearGradient>`;
+    const root = svgEl('g', { transform: `translate(${S.cx} ${S.cy})` }, svg);
+    // background: faint fan of light, emblem rings + spokes, the selected slot's green wedge
+    const bg = svgEl('g', {}, root);
+    for (let i = 0; i < n * 2; i++) { const a0 = i * half - half / 2, a1 = a0 + half, r = 640;
+      svgEl('path', { d: `M0 0 L${Math.sin(a0) * r} ${-Math.cos(a0) * r} L${Math.sin(a1) * r} ${-Math.cos(a1) * r}Z`, fill: i % 2 ? '#9ab4ff' : '#ffffff', opacity: i % 2 ? .045 : .025 }, bg); }
+    for (const r of [S.len + 34, S.len + 58, 120]) svgEl('circle', { r, fill: 'none', stroke: '#a8b8ff', 'stroke-opacity': .16, 'stroke-width': r > 200 ? 1.2 : 1 }, bg);
+    for (let i = 0; i < n; i++) { const a = (i + .5) * 2 * half; svgEl('line', { x1: Math.sin(a) * (S.inner + 10), y1: -Math.cos(a) * (S.inner + 10), x2: Math.sin(a) * (S.len + 58), y2: -Math.cos(a) * (S.len + 58), stroke: '#a8b8ff', 'stroke-opacity': .14 }, bg); }
+    this.wedge = svgEl('path', { d: `M0 0 L${-Math.tan(half * 1.15) * 640} -640 L${Math.tan(half * 1.15) * 640} -640Z`, fill: 'url(#csgreen)' }, bg);
+    // petals (focus items, in roster order)
+    const grid = svgEl('g', { id: 'cs-grid' }, root);
     this.slots.forEach((s, i) => {
-      const el = document.createElement('div'); el.className = 'cs-card' + (s.locked ? ' locked' : '');
-      el.innerHTML = s.locked ? `${SILHOUETTE}<div class="cs-q">?</div><div class="cs-cname">${s.name}</div>`
-        : `<img src="${(s.c.select && s.c.select.card) || s.c.portraits.transformed}" alt=""><div class="cs-cname">${s.c.name}</div>`;
-      el.onclick = () => { if (focus.i === i) this.confirm(); else { focus.i = i; markFocus(); AudioManager.sfx('select'); } };
-      el.ondblclick = () => this.confirm();
-      el.onmouseenter = () => { if (focus.i !== i) { focus.i = i; markFocus(); } };
-      grid.appendChild(el);
+      const deg = i * 360 / n, g = svgEl('g', { class: 'cs-card' + (s.locked ? ' locked' : '') }, grid); g.style.transform = `rotate(${deg}deg)`;   // inline style: beats the generic .cs-card.sel rule
+      const cp = svgEl('clipPath', { id: 'cscp' + i }, defs); svgEl('polygon', { points: poly }, cp);
+      svgEl('polygon', { points: poly, fill: s.color || '#3a3a6a', opacity: .55 }, g);
+      const ih = 150 * 2.52; svgEl('image', { href: s.face, x: -75, y: iy - 22 - ih * 0.22, width: 150, height: ih, 'clip-path': `url(#cscp${i})`, preserveAspectRatio: 'xMidYMid slice' }, g);
+      svgEl('polygon', { points: poly, fill: 'url(#csfade)', 'clip-path': `url(#cscp${i})` }, g);
+      svgEl('polygon', { points: poly, fill: 'none', stroke: '#1c1e2a', 'stroke-width': 8, 'stroke-linejoin': 'round' }, g);     // dark metal frame
+      svgEl('polygon', { points: poly, fill: 'none', stroke: 'url(#cssilver)', 'stroke-width': 3.2, 'stroke-linejoin': 'miter' }, g);
+      svgEl('path', { d: `M0 ${-S.len + 16} L5 ${-S.len + 26} L0 ${-S.len + 36} L-5 ${-S.len + 26}Z`, fill: '#e8ecf6', opacity: .85 }, g);   // tip ornament
+      g.onclick = () => { if (focus.i === i) this.confirm(); else { focus.i = i; markFocus(); AudioManager.sfx('select'); } };
+      g.onmouseenter = () => { if (focus.i !== i) { focus.i = i; markFocus(); } };
     });
-    const def = Math.max(0, this.slots.findIndex(s => s.c && G.char ? s.c === G.char : s.id === (G.mission && G.mission.character)));
+    // selection highlight on top: green glowing frame, beam past the tip, gem
+    this.hl = svgEl('g', { 'pointer-events': 'none' }, root);
+    svgEl('polygon', { points: poly, fill: '#7aff6a', 'fill-opacity': .08, stroke: '#8aff6a', 'stroke-width': 4, filter: 'url(#csglow)' }, this.hl);
+    svgEl('line', { x1: 0, y1: -S.len - 4, x2: 0, y2: -S.len - 70, stroke: '#b8ff9a', 'stroke-width': 3, filter: 'url(#csglow)' }, this.hl);
+    svgEl('path', { d: `M0 ${-S.len - 22} L9 ${-S.len - 6} L0 ${-S.len + 10} L-9 ${-S.len - 6}Z`, fill: '#d8ffc8', filter: 'url(#csglow)' }, this.hl);
+    svgEl('circle', { r: 10, fill: '#e8ffe0', filter: 'url(#csglow)', opacity: .9 }, this.hl);
+    this.pos = this.slots.map((s, i) => { const a = i * 2 * half; return [S.cx + Math.sin(a) * S.len * .55, S.cy - Math.cos(a) * S.len * .55]; });
+    const def = Math.max(0, this.slots.findIndex(s => G.char ? s.c === G.char : s.id === (G.mission && G.mission.character)));
     setFocus([...grid.children], def, i => this.describe(i));
   },
   describe(i) {
     const s = this.slots[i]; if (!s) return;
-    const sel = s.c && s.c.select || {};
-    $('cs-name').textContent = s.locked ? '???' : s.c.name;
-    $('cs-title').textContent = s.locked ? 'Locked' : (sel.title || '');
-    $('cs-blurb').textContent = s.locked ? 'A new singer is on the way.' : (sel.blurb || '');
+    const deg = i * 360 / this.slots.length;
+    this.hl.setAttribute('transform', `rotate(${deg})`); this.wedge.setAttribute('transform', `rotate(${deg})`);
+    $('cs-name').textContent = s.name; $('cs-jp').textContent = s.jp || '';
+    $('cs-blurb').textContent = s.blurb || '';
+    $('cs-move').textContent = s.locked ? 'Coming Soon' : (s.c.ultimate && s.c.ultimate.name) || '';
+    $('cs-prev').innerHTML = !s.locked && s.preview ? `<img src="${s.preview}" alt="">` : '<div class="cs-prev-soon">Coming Soon</div>';
+    const art = $('cs-art'), box = art.parentNode; box.classList.toggle('locked', s.locked);
+    const src = s.art || (s.c && s.c.portraits.transformed) || '';
+    art.onerror = () => { art.style.opacity = 0; };
+    art.style.opacity = 1; if (src && !art.src.endsWith(src)) art.src = src;
     $('cs-confirm').disabled = !!s.locked;
-    focus.items[i] && focus.items[i].scrollIntoView({ block: 'nearest' });
   },
+  // arrows: move to the nearest petal in that direction (works for any number of slots)
   move(a) {
-    const n = this.slots.length, c = this.cols; let i = focus.i;
-    if (a === 'left') i = (i - 1 + n) % n; if (a === 'right') i = (i + 1) % n;
-    if (a === 'up') i = i - c >= 0 ? i - c : i; if (a === 'down') i = i + c < n ? i + c : i;
-    if (i !== focus.i) { focus.i = i; AudioManager.sfx('select'); markFocus(); }
+    const d = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[a], [x0, y0] = this.pos[focus.i];
+    let best = -1, bs = 1e9;
+    this.pos.forEach(([x, y], j) => {
+      if (j === focus.i) return; const dx = x - x0, dy = y - y0, along = dx * d[0] + dy * d[1]; if (along <= 1) return;
+      const score = Math.hypot(dx, dy) + Math.abs(dx * d[1] - dy * d[0]) * 1.5; if (score < bs) { bs = score; best = j; }
+    });
+    if (best < 0) best = (focus.i + (a === 'left' || a === 'up' ? -1 : 1) + this.slots.length) % this.slots.length;
+    focus.i = best; AudioManager.sfx('select'); markFocus();
   },
   confirm() {
     const s = this.slots[focus.i];
-    if (!s || s.locked) { const el = focus.items[focus.i]; if (el) { el.classList.remove('deny'); void el.offsetWidth; el.classList.add('deny'); } AudioManager.sfx('select'); return; }
+    if (!s || s.locked) { this.hl.classList.remove('deny'); AudioManager.sfx('select'); const g = this.hl; g.style.transition = 'opacity .08s'; g.style.opacity = .2; setTimeout(() => g.style.opacity = 1, 120); return; }
     if (G.char !== s.c) G.song = null;
     G.char = s.c; AudioManager.sfx('confirm');
     preloadVideo(charVideos(G.char));          // start the big downloads now (transform first, then ultimate)
     go(Songs);
   },
-  update() {
-    this.t++;
-    const cv = $('cs-canvas'), x = cv.getContext('2d'); x.clearRect(0, 0, cv.width, cv.height); x.imageSmoothingEnabled = false;
-    const s = this.slots && this.slots[focus.i];
-    if (!s || s.locked) { x.fillStyle = '#ffffff22'; x.font = '160px Pixelify'; x.textAlign = 'center'; x.fillText('?', 210, 290); return; }
-    const c = s.c, sel = c.select || {}, an = c.anims[sel.previewAnim || 'idle'], sp = c.sprites[an.sprite || 'transformed'];
-    const m = META[sp.sheet], im = img(sheetSrc(sp.sheet)); if (!m || !im.complete) return;
-    const f = animFrame(an, this.t), i = m.frames[f] ?? 0, [cw, ch] = m.cell, [ax, ay] = m.anchor, cols = m.cols || 1e9, k = sel.previewScale || 1.3;
-    x.fillStyle = 'rgba(0,0,0,.35)'; x.beginPath(); x.ellipse(210, 395, 70, 14, 0, 0, Math.PI * 2); x.fill();
-    x.drawImage(im, (i % cols) * cw, Math.floor(i / cols) * ch, cw, ch, 210 - ax * k, 395 - ay * k, cw * k, ch * k);
-  }
+  update() { this.t++; }
 };
 $('scr-chars').addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
@@ -511,7 +540,7 @@ const Fight = {
     this.camX = 0; this.lock = null; this.waveIdx = 0; this.wave = null; this.pending = []; this.enemies = []; this.fx = []; this.texts = [];
     this.banner = null; this.goArrow = 0; this.done = false; this.paused = false; this.state = 'play';
     this.stats = { hits: 0, maxCombo: 0, dmgTaken: 0, frames: 0, kills: 0 };
-    this.combo = 0; this.comboT = 0; this.comboPop = 0;
+    this.combo = 0; this.comboT = 0; this.comboPop = 0; this.slowmo = 0; this.zoom = 1; this.zoomX = W / 2; this.hpShake = 0;
     this.p = { x: 200, y: 610, z: 0, vx: 0, vz: 0, face: 1, hp: c.stats.hp, hpMax: c.stats.hp, meter: 0, state: 'idle', t: 0, move: null, mt: 0, buf: [], inv: 0, hitIds: new Set(), trail: [], dashCd: 0, dashLate: 0 };
     this.items = []; this.decals = [];
     preloadVideo(charVideos(c));                    // ultimate must be ready before L is pressed
@@ -524,10 +553,12 @@ const Fight = {
   update() {
     if (this.paused || this.state === 'video') { if (this.paused && Input.consume('pause')) this.resume(); return; }
     if (Input.consume('pause') && this.state === 'play') { this.pause(); return; }
+    if (this.slowmo > 0 && this.state === 'play') { this.slowmo--; if (this.slowmo % 2) return; }   // finisher slow-mo: half speed
     this.t++;
     if (this.banner) { this.banner.t++; if (this.banner.t > this.banner.dur) this.banner = null; }
     if (this.flash > 0) this.flash--;
     if (this.shake > 0) this.shake *= 0.85, this.shake < 0.5 && (this.shake = 0);
+    if (this.zoom > 1) { this.zoom = 1 + (this.zoom - 1) * 0.88; if (this.zoom < 1.002) this.zoom = 1; }
     if (this.songT > 0) this.songT--;
     if (this.comboT > 0 && --this.comboT === 0) this.combo = 0;
     if (this.comboPop > 0) this.comboPop--;
@@ -743,16 +774,24 @@ const Fight = {
     const def = e.def; e.hp -= m.dmg; e.flash = 6;
     this.combo++; this.comboT = 100; this.comboPop = 10; this.stats.hits++; this.stats.maxCombo = Math.max(this.stats.maxCombo, this.combo);
     const p = this.p; p.meter = Math.min(this.c.ultimate.meterMax, p.meter + m.meter);
-    this.hitstop = m.launch || m.dmg >= 12 ? 7 : 4; this.shake = Math.max(this.shake, m.shake || 2);
-    AudioManager.sfx(m.sfx || 'light');
-    const hy = e.y - e.z - this.eHeight(e) * 0.55;
-    this.spark(e.x - dir * def.width * 0.15, hy, m.dmg >= 12 ? 1.6 : 1);
-    this.texts.push({ x: e.x + rnd(-15, 15), y: hy - 30, s: String(m.dmg), life: 40, c: m.dmg >= 12 ? '#ffd36a' : '#fff' });
+    // finisher = big hit (>= 15 dmg) or the last strike of a combo chain (no follow-up)
+    const fin = m.dmg >= 15 || (!m.multi && m.chain && !Object.keys(m.chain).length && m.dmg >= 9);
+    this.hitstop = fin ? 12 : m.launch || m.dmg >= 12 ? 7 : 4; this.shake = Math.max(this.shake, (m.shake || 2) + (fin ? 4 : 0));
+    AudioManager.sfx(m.sfx || 'light', { pitch: rnd(0.9, 1.12) });
+    if (fin || m.dmg >= 11) AudioManager.sfx('thump', { pitch: rnd(0.88, 1.1), vol: fin ? 1 : 0.7 });
+    const hy = e.y - e.z - this.eHeight(e) * 0.55, hx = e.x - dir * def.width * 0.15;
+    this.spark(hx, hy, fin ? 2.4 : m.dmg >= 12 ? 1.6 : 1);
+    if (fin) {
+      this.fx.push({ type: 'burst', x: hx, y: hy, life: 9, max: 9 });
+      this.slowmo = 14; this.zoom = 1.07; this.zoomX = e.x - this.camX; this.zoomY = hy;
+    }
+    this.texts.push({ x: e.x + rnd(-15, 15), y: hy - 30, s: String(m.dmg), life: fin ? 55 : 40, c: fin ? '#ff9a3c' : m.dmg >= 12 ? '#ffd36a' : '#fff', sz: fin ? 52 : m.dmg >= 12 ? 36 : 30 });
+    e.hitPose = (e.hitPose || 0) ^ 1;
     const armored = def.armor && !(m.dmg >= 15 && Math.random() < 0.35) && e.hp > 0;
     if (!armored) {
-      e.face = -dir; e.vx = dir * m.knock / def.weight;
+      e.face = -dir; e.vx = dir * m.knock * (fin ? 1.6 : 1.3) / def.weight;            // slide back (dust in updateEnemy)
       if (m.launch && !def.boss) { e.vz = m.launch; e.z = Math.max(e.z, 1); e.state = 'air'; e.t = 0; }
-      else if (e.state === 'air' || e.z > 0) { e.vz = Math.max(e.vz, 5); e.state = 'air'; }
+      else if (e.state === 'air' || e.z > 0) { e.vz = Math.max(e.vz, 6.5); e.vx *= 0.6; e.state = 'air'; }   // juggle: every hit keeps them up
       else { e.state = 'hit'; e.t = 0; e.stun = m.hitstun; }
     } else { e.vx = dir * 1; }
     if (e.hp <= 0) { e.dead = true; if (e.state !== 'air') this.killEnemy(e); }
@@ -772,7 +811,7 @@ const Fight = {
     p.meter = 0; this.setP('ultpose'); AudioManager.sfx('shine'); this.flash = 10; this.flashColor = '#ffd36a';
   },
   startUltVideo() {
-    this.state = 'video'; AudioManager.duck(0.15);
+    this.state = 'video'; AudioManager.duck(0.85);   // music stays almost full volume under the ultimate video
     playVideo(this.c.ultimate.video, () => {
       show(null); this.state = 'play'; AudioManager.duck(1); this.setP('idle');
       this.flash = 30; this.flashColor = '#fff'; this.shake = 16; AudioManager.sfx('boom');
@@ -788,7 +827,8 @@ const Fight = {
     const p = this.p; if (p.state === 'dash' && p.t <= this.c.dash.iframes) return;   // dash i-frames
     if (p.inv > 0 || p.state === 'ko' || p.state === 'ultpose' || this.state !== 'play') return;
     if (G.debug.god) dmg = 0;
-    p.hp = Math.max(0, p.hp - dmg); this.stats.dmgTaken += dmg; p.inv = this.c.stats.invuln; p.vx = dir * 6; p.buf = [];
+    p.hp = Math.max(0, p.hp - dmg); this.stats.dmgTaken += dmg; p.inv = this.c.stats.invuln; p.vx = dir * 10; p.buf = [];
+    if (dmg > 0) { this.texts.push({ x: p.x + rnd(-10, 10), y: p.y - 200, s: '-' + dmg, life: 45, c: '#ff4a4a', sz: 40 }); this.hpShake = 18; }
     this.shake = Math.max(this.shake, shake || 6); this.flash = 6; this.flashColor = '#ff3030'; AudioManager.sfx('hurt');
     this.spark(p.x, p.y - 110, 0.8);
     if (p.hp <= 0) { this.setP('ko'); p.vz = 6; p.z = 1; this.state = 'ko'; this.endT = 110; AudioManager.duck(0.3); }
@@ -826,11 +866,20 @@ const Fight = {
     if (e.state === 'dying') { if (e.t > 70) e.gone = true; this.dustFx(e); return; }
     if (e.state === 'air') {
       e.vz -= GRAV; e.z += e.vz;
+      const Lb = this.lock ?? this.camX;                 // launched into the screen edge: bounce back with an impact
+      if ((e.x < Lb + 40 && e.vx < -1.5) || (e.x > Lb + W - 40 && e.vx > 1.5)) {
+        e.x = clamp(e.x, Lb + 40, Lb + W - 40); e.vx = -e.vx * 0.55; e.vz = Math.max(e.vz, 4); this.shake = Math.max(this.shake, 7);
+        this.spark(e.x, e.y - e.z - this.eHeight(e) * 0.5, 1.1); AudioManager.sfx('thump', { pitch: rnd(1.1, 1.3), vol: 0.6 });
+      }
       if (e.z <= 0) { e.z = 0; e.vz = 0; this.shake = Math.max(this.shake, 3); if (e.dead) this.killEnemy(e); else { e.state = 'down'; e.t = 0; } }
       return;
     }
     if (e.state === 'down') { if (e.t > 40) { e.state = 'walk'; e.t = 0; e.cd = rnd(40, 70); } return; }
-    if (e.state === 'hit') { if (e.t > e.stun) { e.state = 'walk'; e.t = 0; } return; }
+    if (e.state === 'hit') {
+      if (Math.abs(e.vx) > 1.5 && e.t % 3 === 0) this.fx.push({ type: 'puff', x: e.x - Math.sign(e.vx) * e.def.width * 0.3, y: e.y + rnd(-3, 3), vx: -e.vx * 0.15, vy: rnd(-0.8, 0), c: '#d8cbb4', sz: rnd(10, 18), life: 24, max: 24, update: f => { f.x += f.vx; f.y += f.vy; } });
+      if (this.lock != null) e.x = clamp(e.x, this.lock + 40, this.lock + W - 40);
+      if (e.t > e.stun) { e.state = 'walk'; e.t = 0; } return;
+    }
     const L = this.lock ?? this.camX;
     // once in the arena, keep enemies inside the locked screen (prevents a knocked-back / spaced-out enemy softlocking the wave offscreen)
     if (this.lock != null && e.state !== 'enter') e.x = clamp(e.x, L + 40, L + W - 40);
@@ -893,6 +942,7 @@ const Fight = {
   draw() {
     const sx = this.shake ? rnd(-this.shake, this.shake) : 0, sy = this.shake ? rnd(-this.shake, this.shake) : 0;
     ctx.save(); ctx.translate(sx, sy);
+    if (this.zoom > 1) { const zx = this.zoomX, zy = this.zoomY || H * 0.6; ctx.translate(zx, zy); ctx.scale(this.zoom, this.zoom); ctx.translate(-zx, -zy); }   // finisher punch-in
     this.drawBG();
     const cam = Math.round(this.camX);
     const list = [...this.enemies.map(e => ({ y: e.y, e })), { y: this.p.y + 0.1, p: this.p }].sort((a, b) => a.y - b.y);
@@ -952,7 +1002,10 @@ const Fight = {
     if (wa && (e.state === 'walk' || e.state === 'enter') && (e.still || 0) < 10) fr = strideFrame(wa, e.wd || 0, def.scale);
     if (e.state === 'walk' || e.state === 'enter') { if (def.hops) { y -= Math.abs(Math.sin(e.t * 0.12)) * 16; sy = 1 + Math.sin(e.t * 0.24) * 0.06; } else if (!wa) { rot = Math.sin(e.t * 0.15 + e.seed) * 0.05; } }
     if (e.state === 'windup') { x += Math.sin(e.t * 1.7) * 3; sy = 1 - 0.06 * Math.min(1, e.t / def.attack.windup); }
-    if (e.state === 'hit') x += Math.sin(e.t * 2) * 3;
+    if (e.state === 'hit') {                           // two stagger poses (alternating per hit): lean back / crumple
+      const k = Math.max(0.35, 1 - e.t / 18); x += Math.sin(e.t * 2) * 3 * k;
+      if (e.hitPose) { rot = -e.face * 0.2 * k; sy = 1 - 0.05 * k; } else { rot = e.face * 0.1 * k; sy = 1 - 0.14 * k; }
+    }
     if (e.state === 'air') rot = -e.face * Math.min(1.2, e.t * 0.08);
     if (e.state === 'down') { rot = -e.face * 1.4; }
     ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.translate(-x, -y);
@@ -991,7 +1044,7 @@ const Fight = {
       } else { ctx.globalAlpha = Math.min(1, a * 1.5); ctx.fillStyle = f.c; ctx.fillRect(x - f.sz / 2, f.y - f.sz / 2, f.sz, f.sz); ctx.globalAlpha = 1; }
     }
     ctx.textAlign = 'center';
-    for (const t of this.texts) { ctx.globalAlpha = Math.min(1, t.life / 15); ctx.font = '700 30px Pixelify'; ctx.lineWidth = 5; ctx.strokeStyle = '#000'; ctx.strokeText(t.s, t.x - cam, t.y); ctx.fillStyle = t.c; ctx.fillText(t.s, t.x - cam, t.y); }
+    for (const t of this.texts) { ctx.globalAlpha = Math.min(1, t.life / 15); ctx.font = `700 ${t.sz || 30}px Pixelify`; ctx.lineWidth = t.sz > 40 ? 7 : 5; ctx.strokeStyle = '#000'; ctx.strokeText(t.s, t.x - cam, t.y); ctx.fillStyle = t.c; ctx.fillText(t.s, t.x - cam, t.y); }
     ctx.globalAlpha = 1;
   },
   drawHUD() {
@@ -1002,7 +1055,8 @@ const Fight = {
     if (por.naturalWidth) ctx.drawImage(por, por.width * 0.27, 20, por.width * 0.46, por.width * 0.46, 24, 20, 92, 92);
     ctx.restore(); ctx.lineWidth = 4; ctx.strokeStyle = c.color; ctx.beginPath(); ctx.arc(70, 66, 46, 0, Math.PI * 2); ctx.stroke();
     ctx.textAlign = 'left'; ctx.font = '700 26px Pixelify'; this.txt(c.name.toUpperCase(), 128, 38, '#fff');
-    bar(128, 48, 340, 20, p.hp / p.hpMax, '#ff5a3c', '#ffb04a');
+    const hs = this.hpShake > 0 ? (this.hpShake--, rnd(-1, 1) * this.hpShake * 0.4) : 0;   // health bar shakes when hurt
+    bar(128 + hs, 48, 340, 20, p.hp / p.hpMax, this.hpShake > 10 && this.hpShake % 4 < 2 ? '#ffffff' : '#ff5a3c', '#ffb04a');
     ctx.font = '18px Pixelify'; this.txt(`${Math.ceil(p.hp)} / ${p.hpMax}`, 134, 64, '#fff');
     const mx = this.meterShake > 0 ? (this.meterShake--, rnd(-3, 3)) : 0, full = p.meter >= u.meterMax;
     bar(128 + mx, 78, 280, 14, p.meter / u.meterMax, full ? `hsl(${(this.t * 6) % 360},100%,60%)` : '#ffd36a', '#fff3b0');
