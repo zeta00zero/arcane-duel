@@ -111,7 +111,7 @@ function show(id) {
   document.querySelectorAll('.screen').forEach(s => { if (s.id !== 'scr-overlay') s.classList.remove('on'); });
   if (id) $(id).classList.add('on'); curScreen = id; Input.clear();
 }
-function overlay(html) { const o = $('scr-overlay'); if (html == null) { o.classList.remove('on'); return; } $('overlay-panel').innerHTML = html; o.classList.add('on'); }
+function overlay(html) { const o = $('scr-overlay'); o.classList.remove('result', 'pausemenu'); if (html == null) { o.classList.remove('on'); return; } $('overlay-panel').innerHTML = html; o.classList.add('on'); }
 const overlayOn = () => $('scr-overlay').classList.contains('on');
 
 // generic keyboard focus for DOM lists
@@ -260,7 +260,7 @@ const CharSelect = {
       svgEl('polygon', { points: poly, fill: s.color || '#3a3a6a', opacity: .55 }, g);
       // portrait stays UPRIGHT (counter-rotated) and centred in the wide part of the petal so every face is readable
       const pc = svgEl('g', { 'clip-path': `url(#cscp${i})` }, g), up = svgEl('g', { transform: `translate(0 ${-S.len * 0.52}) rotate(${-deg})` }, pc);
-      const PS = S.portrait || 172; svgEl('image', { href: s.face, mask: 'url(#csfeather)', x: -PS / 2, y: -PS * 0.40, width: PS, height: PS, preserveAspectRatio: 'xMidYMid slice' }, up);
+      const PS = S.portrait || 172; svgEl('image', { href: s.face, mask: 'url(#csfeather)', x: -PS * (0.5 - (s.petalX || 0)), y: -PS * (s.petalY ?? S.petalY ?? 0.57), width: PS, height: PS, preserveAspectRatio: 'xMidYMid slice' }, up);
       svgEl('polygon', { points: poly, fill: 'url(#csfade)', 'clip-path': `url(#cscp${i})` }, g);
       svgEl('polygon', { points: poly, fill: 'none', stroke: '#1c1e2a', 'stroke-width': 8, 'stroke-linejoin': 'round' }, g);     // dark metal frame
       svgEl('polygon', { points: poly, fill: 'none', stroke: 'url(#cssilver)', 'stroke-width': 3.2, 'stroke-linejoin': 'miter' }, g);
@@ -295,6 +295,8 @@ const CharSelect = {
     const src = s.art || (s.c && s.c.portraits.transformed) || '';
     art.onerror = () => { art.style.opacity = 0; };
     art.style.opacity = 1; if (src && !art.src.endsWith(src)) art.src = src;
+    const fx = s.artFx || {};                       // per-character big-art framing: s = scale, y = px (negative = up)
+    art.style.transformOrigin = '50% 100%'; art.style.transform = `translateX(-50%) translateY(${fx.y || 0}px) scale(${fx.s || 1})`;
     $('cs-confirm').disabled = !!s.locked;
   },
   // arrows: move to the nearest petal in that direction (works for any number of slots)
@@ -526,6 +528,9 @@ const Transform = {
   },
   toShine() { this.phase = 'shine'; this.t = 0; AudioManager.sfx('shine'); },
   toVideo() {
+    if (!G.char.transform || !G.char.transform.video) {   // Tsubasa (and anyone without a clip): shine -> reveal
+      show(null); this.phase = 'reveal'; this.t = 0; AudioManager.sfx('boom'); return;
+    }
     this.phase = 'video';
     playVideo(G.char.transform.video, () => { show(null); this.phase = 'reveal'; this.t = 0; AudioManager.sfx('boom'); });
   },
@@ -583,6 +588,22 @@ function drawRays(cx, cy, k, t) {
 // ============================================================
 const GRAV = 0.75;
 const rnd = (a, b) => a + Math.random() * (b - a);
+// ---------- result: score + rank ----------
+// score = 10000 clear bonus + time bonus 100/s under par (mission.parTime, default 180 s) + Noisy 300 each
+//       + max combo 400 each + hits 20 each - damage taken 60 per HP + 5000 no-damage bonus.  Rank by score (RANKS).
+const RANKS = [{ r: 'D', at: 0 }, { r: 'C', at: 12000 }, { r: 'B', at: 22000 }, { r: 'A', at: 32000 }, { r: 'S', at: 42000 }];
+function resultScore(m, s, secs) {
+  const par = (m && m.parTime) || 180;
+  const score = Math.max(0, Math.round(10000 + Math.max(0, par - secs) * 100 + s.kills * 300 + s.maxCombo * 400 + s.hits * 20 - s.dmgTaken * 60 + (s.dmgTaken === 0 ? 5000 : 0)));
+  let ri = 0; RANKS.forEach((r, i) => { if (score >= r.at) ri = i; });
+  const hi = i => (RANKS[i + 1] ? RANKS[i + 1].at : RANKS[i].at * 1.25);                // bar: 5 equal segments, filled within the band
+  const bar = Math.min(1, (ri + Math.min(1, (score - RANKS[ri].at) / (hi(ri) - RANKS[ri].at))) / RANKS.length);
+  const nx = RANKS[ri + 1];
+  return { score, rank: RANKS[ri].r, bar, next: nx ? { r: nx.r, need: nx.at - score } : null };
+}
+const pad3 = n => String(n ?? 0).padStart(3, '0'), pad6 = n => String(n ?? 0).padStart(6, '0');
+const fmtTime = t => t == null ? '--:--.--' : `${String(Math.floor(t / 60)).padStart(2, '0')}:${(t % 60).toFixed(2).padStart(5, '0')}`;
+window.SOTS_resultScore = resultScore;
 const A_DASH = c => (c.anims.dash ? c.anims.dash.frames[0] : 'idle0');
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 let uid = 0;
@@ -662,11 +683,14 @@ const Fight = {
     if (p.state === 'attack') {
       const m = c.moves[p.move]; p.mt++;
       if (m.air) { this.updateAirMove(m); return; }
-      if (p.mt <= m.startup) p.x += p.face * (m.step || 0) / Math.max(1, m.startup);
+      const ck = m.charge ? p.chg || 0 : 0, stT = m.stepT || m.startup;          // charged heavy: further / harder
+      if (p.mt <= stT) p.x += p.face * ((m.step || 0) + (ck ? m.charge.step * ck : 0)) / Math.max(1, stT);
       const fi = moveIdx(m, p.mt - 1);
+      if ((m.trail || ck > 0.25) && p.mt <= stT && p.mt % 2 === 0) p.trail.push({ x: p.x, y: p.y, z: p.z, frame: m.frames[fi], face: p.face, life: 12 });
       if (fi !== p.mfi) { p.mfi = fi; if (m.multi && m.hit.includes(fi)) p.hitIds = new Set(); }   // multi-hit: each strike frame hits again
       if (m.hop && p.mt === m.startup + 1) { p.vz = m.hop; p.z = Math.max(p.z, 1); }
-      const mm = m.finisher && fi === Math.max(...m.hit) ? { ...m, ...m.finisher } : m;
+      let mm = m.finisher && fi === Math.max(...m.hit) ? { ...m, ...m.finisher } : m;
+      if (ck) mm = { ...mm, dmg: Math.round(mm.dmg + m.charge.dmg * ck), knock: mm.knock + m.charge.knock * ck, shake: (mm.shake || 0) + m.charge.shake * ck };
       if (p.mt > m.startup && p.mt <= m.startup + m.active) this.checkHits(mm);
       if (p.mt === m.startup + 1) AudioManager.sfx('whiff');
       if (p.mt >= m.startup + m.active) {        // chain window (dash cancels recovery too)
@@ -675,6 +699,18 @@ const Fight = {
         if (nb) { p.buf = []; this.startMove(m.chain[nb.b]); return; }
       }
       if (p.mt >= m.startup + m.active + m.recovery) this.setP(p.z > 0 ? 'jump' : 'idle');
+      this.clampPlayer(); return;
+    }
+    if (p.state === 'charge') {                       // holding K: glow + shake; release (or dash) = heavy dash punch
+      const m = c.moves[c.starters.heavy], C = m.charge, held = this.state === 'play' && Input.isDown('heavy');
+      if (this.tryDash()) return;
+      if (!held || p.t > C.cap + 90) {                // auto-release 1.5 s after full charge
+        const k = p.t < C.min ? 0 : Math.min(1, (p.t - C.min) / (C.cap - C.min));
+        p.chgK = 0; this.startMove(c.starters.heavy, k); if (k > 0.5) { AudioManager.sfx('launch', { pitch: 1 + k * 0.3 }); this.shake = Math.max(this.shake, 4); } return;
+      }
+      p.chgK = Math.min(1, Math.max(0, (p.t - C.min) / (C.cap - C.min)));
+      if (p.t === C.cap) { AudioManager.sfx('shine', { vol: 0.6 }); this.fx.push({ type: 'ring', x: p.x + p.face * 50, y: p.y - 115, r: 70, life: 14, max: 14, w: 6, c: '255,214,106' }); }
+      else if (p.t > C.min && p.t % 9 === 0) this.fx.push({ type: 'ring', x: p.x + p.face * 50, y: p.y - 115, r: 26 + 40 * p.chgK, life: 10, max: 10, w: 3, c: '255,190,90' });
       this.clampPlayer(); return;
     }
     if (p.state === 'dash') {                         // Shift: short burst, invulnerable, leaves afterimages
@@ -702,7 +738,11 @@ const Fight = {
     const jb = p.buf.findIndex(b => b.b === 'jump');
     if (jb >= 0) { p.buf.splice(jb, 1); p.vz = c.jump.vz; p.z = 0.1; this.setP('jump'); AudioManager.sfx('whiff'); return; }
     const b = p.buf.find(b => c.starters[b.b]);
-    if (b) { p.buf = []; this.startMove(p.dashLate > 0 && c.dashMoves[b.b] ? c.dashMoves[b.b] : c.starters[b.b]); return; }
+    if (b) {
+      p.buf = []; const id = p.dashLate > 0 && c.dashMoves[b.b] ? c.dashMoves[b.b] : c.starters[b.b];
+      if (c.moves[id].charge) { this.setP('charge'); p.chgK = 0; return; }           // K: start charging (tap = instant power punch)
+      this.startMove(id); return;
+    }
     let dx = (Input.isDown('right') ? 1 : 0) - (Input.isDown('left') ? 1 : 0);
     let dy = (Input.isDown('down') ? 1 : 0) - (Input.isDown('up') ? 1 : 0);
     if (this.state !== 'play') dx = dy = 0;
@@ -813,7 +853,11 @@ const Fight = {
     }
   },
   setP(s) { this.p.state = s; this.p.t = 0; this.p.landT = 0; },
-  startMove(id) { const p = this.p; p.state = 'attack'; p.move = id; p.mt = 0; p.t = 0; p.hitIds = new Set(); },
+  startMove(id, k = 0) {
+    const p = this.p, m0 = this.c.moves[id], lv = m0 && m0.charge && m0.charge.levels;
+    if (lv && k > 0) { let pick = id; for (const L of lv) if (k >= L.at) pick = L.move; id = pick; }
+    p.state = 'attack'; p.move = id; p.mt = 0; p.t = 0; p.hitIds = new Set(); p.chg = k;
+  },
   checkHits(m) {
     const p = this.p;
     for (const e of this.enemies) {
@@ -866,8 +910,7 @@ const Fight = {
     p.meter = 0; this.setP('ultpose'); AudioManager.sfx('shine'); this.flash = 10; this.flashColor = '#ffd36a';
   },
   startUltVideo() {
-    this.state = 'video'; AudioManager.duck(0.85);   // music stays almost full volume under the ultimate video
-    playVideo(this.c.ultimate.video, () => {
+    const apply = () => {
       show(null); this.state = 'play'; AudioManager.duck(1); this.setP('idle');
       this.flash = 30; this.flashColor = '#fff'; this.shake = 16; AudioManager.sfx('boom');
       const u = this.c.ultimate;
@@ -876,7 +919,10 @@ const Fight = {
         this.hitEnemy(e, { dmg: e.def.boss ? u.bossDamage : u.damage, knock: 14, launch: 14, hitstun: 50, meter: 0, sfx: 'heavy', shake: 16 }, e.x >= this.p.x ? 1 : -1);
       }
       this.p.meter = 0; this.hitstop = 0;
-    });
+    };
+    if (!this.c.ultimate || !this.c.ultimate.video) { apply(); return; }   // no clip yet: burst after the pose
+    this.state = 'video'; AudioManager.duck(0.85);   // music stays almost full volume under the ultimate video
+    playVideo(this.c.ultimate.video, apply);
   },
   hurtPlayer(dmg, dir, shake, knockdown) {
     const p = this.p; if (p.state === 'dash' && p.t <= this.c.dash.iframes) return;   // dash i-frames
@@ -978,20 +1024,56 @@ const Fight = {
   },
   // ---------------- overlays ----------------
   pause() { this.paused = true; AudioManager.pauseMusic(); this.pauseMenu(); },
-  pauseMenu() { overlay(`<h2>Paused</h2><div class="row"><button class="btn" data-ov="resume">Resume</button><button class="btn" data-ov="retry">Retry</button></div><div class="row"><button class="btn ghost" data-ov="options">Options</button><button class="btn ghost" data-ov="title">Quit to Title</button></div>`); },
+  pauseMenu() {
+    const row = (k, v) => `<div class="pm-row"><span class="pm-k">${k}</span><span class="pm-v">${v}</span></div>`;
+    overlay(`<h2>Paused</h2><div class="pm-cols">
+      <div class="pm-col"><h3>Controls</h3>${row('Arrows / WASD', 'Move')}${row('J', 'Light attack')}${row('K', 'Heavy attack')}${row('Space', 'Jump')}${row('Shift', 'Dash')}${row('L', 'Ultimate (meter full)')}${row('P / Esc', 'Pause')}</div>
+      <div class="pm-col"><h3>Moves</h3>${(this.c.moveHelp || [['J J J', 'Punch, punch, Power Punch'],['J J K', 'Punch, punch, Dash Knee'],['K', 'Power Punch'],['Hold K', 'Charge, release: Dash Punch'],['Jump + J', 'Air Kick'],['Jump + K', 'Dive smash']]).map(([k, v]) => row(k, v)).join('')}${this.c.ultimate ? row('L', esc(this.c.ultimate.name)) : ''}</div>
+    </div><div class="row"><button class="btn" data-ov="resume">Resume</button><button class="btn" data-ov="retry">Retry</button><button class="btn ghost" data-ov="options">Options</button><button class="btn ghost" data-ov="title">Quit to Title</button></div>`);
+    $('scr-overlay').classList.add('pausemenu');
+  },
   resume() { this.paused = false; overlay(null); AudioManager.resumeMusic(); Input.clear(); },
   showGameOver() {
     this.state = 'over'; AudioManager.stopMusic();
     overlay(`<h2>Game Over</h2><div class="stats">The Noisy overwhelmed ${this.c.name}...</div><div class="row"><button class="btn big" data-ov="retry">Retry</button><button class="btn ghost" data-ov="title">Title</button></div>`);
   },
   showClear() {
-    this.state = 'done'; const s = this.stats, secs = s.frames / 60;
-    let score = s.maxCombo * 3 + (this.p.hp / this.p.hpMax) * 40 + Math.max(0, 180 - secs) / 4;
-    const rank = score > 85 ? 'S' : score > 65 ? 'A' : score > 45 ? 'B' : 'C';
+    this.state = 'done'; const s = this.stats, secs = s.frames / 60, R = resultScore(G.mission, s, secs);
     AudioManager.duck(0.4);
-    overlay(`<h2>Mission Clear!</h2><div class="rank">${rank}</div><div class="stats">Time ${Math.floor(secs / 60)}:${String(Math.floor(secs % 60)).padStart(2, '0')} &nbsp;&middot;&nbsp; Max combo ${s.maxCombo}<br>Hits ${s.hits} &nbsp;&middot;&nbsp; Noisy cleared ${s.kills} &nbsp;&middot;&nbsp; Damage taken ${s.dmgTaken}<br>Song: ${G.song.title}</div>
-      <div class="row"><button class="btn" data-ov="retry">Replay</button><button class="btn" data-ov="missions">Mission Select</button><button class="btn ghost" data-ov="title">Title</button></div>`);
-    G.lastClear = { rank, ...s };
+    // bests per mission (localStorage)
+    const KEY = 'sots_best_v1', all = JSON.parse(localStorage.getItem(KEY) || '{}'), old = all[G.mission.id] || null;
+    const nb = { time: !old || secs < old.time, kills: !old || s.kills > old.kills, combo: !old || s.maxCombo > old.combo, score: !old || R.score > old.score };
+    all[G.mission.id] = { time: Math.min(secs, old ? old.time : 1e9), kills: Math.max(s.kills, old ? old.kills : 0), combo: Math.max(s.maxCombo, old ? old.combo : 0), score: Math.max(R.score, old ? old.score : 0) };
+    try { localStorage.setItem(KEY, JSON.stringify(all)); } catch (e) {}
+    const slot = ((D.roster && D.roster.slots) || []).find(r => r.id === this.c.id) || {}, art = slot.art || this.c.portraits.transformed;
+    const best = (k, v) => nb[k] ? '<span class="rs-best">NEW BEST</span>' : old ? `<span class="rs-prev">Best ${v}</span>` : '';
+    const row = (k, icon, label, id, bestTxt) => `<div class="rs-row" style="--d:${k * 0.18 + 0.35}s"><span class="rs-ic">${icon}</span><span class="rs-lab">${label}</span><span class="rs-val" id="${id}">0</span>${bestTxt}</div>`;
+    const segs = RANKS.map(r => `<div class="rs-seg"><b>${r.r}</b></div>`).join('');
+    overlay(`<div class="rs-title">Result</div><div class="rs-sub">${esc(G.mission.title)} &middot; Mission Clear!</div>
+      <img class="rs-art" src="${art}" alt="">
+      <div class="rs-stats">
+        ${row(0, '&#9201;', 'Time', 'rs-time', best('time', fmtTime(old && old.time)))}
+        ${row(1, '&#9673;', 'Noisy defeated', 'rs-kills', best('kills', old && pad3(old.kills)))}
+        ${row(2, '&#10022;', 'Max Combo', 'rs-combo', best('combo', old && pad3(old.combo)))}
+        <div class="rs-bar" style="--d:1s"><div class="rs-fill" id="rs-fill"></div>${segs}</div>
+        <div class="rs-score" style="--d:1.15s"><span class="rs-lab">Score</span><span class="rs-val big" id="rs-score">000000</span>${best('score', old && pad6(old.score))}</div>
+        <div class="rs-rankwrap"><div class="rs-badge" id="rs-badge"><span>${R.rank}</span></div><div class="rs-ranklab">Rank</div></div>
+        ${R.next ? `<div class="rs-next" style="--d:1.3s">Next Rank <b>${R.next.r}</b> &nbsp; +${R.next.need.toLocaleString()} pts</div>` : '<div class="rs-next" style="--d:1.3s">Top rank!</div>'}
+      </div>
+      <div class="rs-btns"><button class="btn small ghost" data-ov="retry"><kbd>&#8592;</kbd> Retry</button><button class="btn small" data-ov="missions">Next <kbd>Enter</kbd></button></div>`);
+    $('scr-overlay').classList.add('result');
+    setFocus([...$('overlay-panel').querySelectorAll('.btn')], 1);
+    // count up, then stamp the rank
+    const t0 = performance.now(), D1 = 1300, ease = k => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
+    const tick = now => {
+      if (!$('rs-score')) return; const k = ease((now - t0 - 450) / D1);
+      $('rs-time').textContent = fmtTime(secs * k); $('rs-kills').textContent = pad3(Math.round(s.kills * k)); $('rs-combo').textContent = pad3(Math.round(s.maxCombo * k));
+      $('rs-score').textContent = pad6(Math.round(R.score * k)); $('rs-fill').style.width = (R.bar * 100 * k).toFixed(1) + '%';
+      if (k < 1) { if (Math.floor(now / 70) % 2) AudioManager.sfx('select', { vol: 0.25, pitch: 0.9 + k * 0.5 }); requestAnimationFrame(tick); }
+      else setTimeout(() => { const b = $('rs-badge'); if (!b) return; b.classList.add('on'); AudioManager.sfx('boom', { vol: 0.6 }); AudioManager.sfx('confirm'); }, 250);
+    };
+    requestAnimationFrame(tick);
+    G.lastClear = { rank: R.rank, score: R.score, ...s };
   },
   // ---------------- draw ----------------
   draw() {
@@ -1006,7 +1088,7 @@ const Fight = {
     for (const o of list) o.e ? this.drawEnemy(o.e, cam) : this.drawPlayer(cam);
     this.drawFx(cam);
     ctx.restore();
-    this.drawHUD();
+    if (this.state !== 'done') this.drawHUD();                 // result screen: clean backdrop
     if (this.flash) { ctx.globalAlpha = Math.min(0.8, this.flash / 12); ctx.fillStyle = this.flashColor; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
   },
   drawBG() {
@@ -1027,7 +1109,14 @@ const Fight = {
     else if ((p.state === 'down' || p.state === 'ko') && A[p.state]) { const a = A[p.state]; frame = p.z > 0 && a.air ? a.air : animFrame(a, p.t - (p.landT || 0)); }
     else if (A[p.state]) frame = animFrame(A[p.state], p.t);
     else frame = animFrame(A.idle, p.t);
-    const x = p.x - cam, y = p.y - p.z;
+    let x = p.x - cam; const y = p.y - p.z;
+    if (p.state === 'charge') x += (p.chgK || 0) * 3 * (p.t % 4 < 2 ? -1 : 1);       // charge shake
+    if (p.state === 'dash') {                          // speed lines streaming behind her
+      ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineCap = 'round';
+      for (let i = 0; i < 6; i++) { const ly = y - 30 - i * 30 - (i * 13 % 11), l = 60 + (i * 47 % 70), off = (this.t * 9 + i * 37) % 50;
+        ctx.lineWidth = i % 2 ? 2 : 3.5; ctx.beginPath(); ctx.moveTo(x - p.face * (50 + off), ly); ctx.lineTo(x - p.face * (50 + off + l), ly); ctx.stroke(); }
+      ctx.restore();
+    }
     if (p.trail.length) {                              // dash afterimages
       const ghost = tinted(sp.sheet, '#6ad8ff');
       for (const g of p.trail) { ctx.globalAlpha = g.life / 14 * 0.55; drawFrame(sp.sheet, g.frame, g.x - cam, g.y - g.z, sp.scale, g.face < 0, ghost); }
@@ -1043,6 +1132,12 @@ const Fight = {
       ctx.restore();
     }
     if (p.state === 'land' && p.landPose) frame = p.landPose;
+    if (p.state === 'charge' && p.chgK > 0) {            // charge glow at the gauntlet
+      const gx = x + p.face * 52, gy = y - 118, r = 18 + 34 * p.chgK + Math.sin(this.t * 0.6) * 4;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(gx, gy, 2, gx, gy, r);
+      g.addColorStop(0, 'rgba(255,255,230,0.95)'); g.addColorStop(0.4, `rgba(255,190,80,${0.5 + 0.4 * p.chgK})`); g.addColorStop(1, 'rgba(255,120,30,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(gx, gy, r, 0, 7); ctx.fill(); ctx.restore();
+    }
     if (rot) {                                         // rotate the frame about the body centre (fist points down)
       const py = y - 130 * sp.scale; ctx.save(); ctx.translate(x, py); ctx.rotate(rot * p.face); ctx.translate(-x, -py);
       drawFrame(sp.sheet, frame, x, y, sp.scale, p.face < 0); ctx.restore();
@@ -1145,11 +1240,8 @@ const Fight = {
     }
     // boss bar
     const b = this.boss; if (b && !b.gone && this.wave && this.wave.boss) { ctx.textAlign = 'left'; ctx.font = '700 22px Pixelify'; this.txt(b.def.name.toUpperCase(), 290, 622, '#ff9a6a'); bar(290, 630, 700, 18, Math.max(0, b.hp) / b.hpMax, '#c22', '#ff6a3c'); }
-    // controls
-    ctx.textAlign = 'center'; ctx.font = '18px Pixelify';
-    ctx.fillStyle = '#0008'; ctx.fillRect(0, 670, W, 50);
-    this.txt('Move: Arrows / WASD    J: Light    K: Heavy    Space: Jump    Shift: Dash    L: Ultimate    P / Esc: Pause', 640, 690, '#fffc', 0);
-    this.txt('Combos:  J-J-J   J-J-J-K Rush   J-K-K Rising   K-K Launcher   Dash+J Strike   Dash+K Shoulder   Air J Kick   Air K Dive', 640, 713, '#ffe08acc', 0);
+    // controls + move list live on the pause screen now (v8); just a small hint here
+    ctx.textAlign = 'right'; ctx.font = '16px Pixelify'; this.txt('P / Esc: Pause & Moves', W - 14, H - 12, '#ffffff88', 0);
     // banner
     if (this.banner) {
       const bn = this.banner, a = Math.min(1, bn.t / 10, (bn.dur - bn.t) / 15 + (bn.dur > 900 ? 1 : 0));
@@ -1190,7 +1282,7 @@ Input.onPress(a => {
     const btns = [...$('overlay-panel').querySelectorAll('.btn')];
     if (a === 'pause' && G.scene === Fight && Fight.paused) { Input.consume('pause'); Fight.resume(); return; }
     if (a === 'pause' || a === 'back') { const back = btns.find(b => ['close', 'pause'].includes(b.dataset.ov)); back && back.click(); return; }
-    if (focus.items !== btns) setFocus(btns, 0);
+    if (focus.items.length !== btns.length || focus.items.some((b, i) => b !== btns[i])) setFocus(btns, $('scr-overlay').classList.contains('result') ? 1 : 0);
     if (a === 'left' || a === 'up') moveFocus(-1); if (a === 'right' || a === 'down') moveFocus(1);
     if (a === 'confirm' && btns[focus.i]) btns[focus.i].click();
     return;
@@ -1229,12 +1321,31 @@ function frame(now) {
 // debug / test hooks
 window.SOTS.debug = {
   fillMeter() { if (G.scene === Fight) Fight.p.meter = G.char.ultimate.meterMax; },
-  startFight(mi = 0) { G.mission = D.missions[mi]; G.char = G.char || D.characters[G.mission.character]; G.song = G.song || G.char.songs[0]; go(Fight); },
+  startAt(sceneName, charId, mi = 0) {
+    G.started = G.unlocked = true; AudioManager.unlock();
+    G.mission = D.missions[mi] || D.missions[0];
+    if (charId && D.characters[charId]) G.char = D.characters[charId];
+    else G.char = G.char || D.characters[G.mission.character];
+    G.song = (G.char.songs && G.char.songs[0]) || G.song;
+    const key = Object.keys(SCENES).find(k => k.toLowerCase() === String(sceneName || '').toLowerCase());
+    go(SCENES[key] || CharSelect);
+  },
+  startFight(mi = 0) { this.startAt('Fight', (G.char && G.char.id), mi); },
+  startTransform(charId = 'tsubasa') { this.startAt('Transform', charId); },
   drop(type = 'small', dx = 120) { if (G.scene === Fight) Fight.dropItem(type, Fight.p.x + dx, Fight.p.y); },
   killAll() { if (G.scene === Fight) Fight.enemies.forEach(e => { e.hp = 0; Fight.killEnemy(e); }); },
   hurt(n) { if (G.scene === Fight) { Fight.p.inv = 0; const god = G.debug.god; G.debug.god = false; Fight.hurtPlayer(n, -1); G.debug.god = god; } },
   state() { const f = Fight; return { scene: G.log[G.log.length - 1], fight: G.scene === Fight ? { state: f.state, hp: f.p.hp, meter: f.p.meter, x: Math.round(f.p.x), wave: f.waveIdx, enemies: f.enemies.length, combo: f.combo, maxCombo: f.stats.maxCombo, hits: f.stats.hits, pstate: f.p.state, lock: f.lock, z: Math.round(f.p.z), hpMax: f.p.hpMax, items: f.items.length, trail: f.p.trail.length, pickups: f.stats.pickups || 0, move: f.p.move } : null, screen: curScreen, overlay: overlayOn() }; }
 };
 
-preloadAll().then(() => { document.fonts && document.fonts.load('20px Pixelify'); go(Intro); requestAnimationFrame(frame); });
+preloadAll().then(() => {
+  document.fonts && document.fonts.load('20px Pixelify');
+  requestAnimationFrame(frame);
+  const bootChar = params.get('char'), bootScene = params.get('scene');
+  if (bootChar && D.characters[bootChar] && bootScene) {
+    SOTS.debug.startAt(bootScene, bootChar);
+  } else {
+    go(Intro);
+  }
+});
 })();
