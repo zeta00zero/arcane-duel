@@ -66,6 +66,10 @@
   "win2": 54,
   "idle1": 55,
   "idle2": 56,
-  "idle3": 57
+  "idle3": 57,
+  "dash0": 58,
+  "knee0": 59,
+  "charge0": 60,
+  "dpunch0": 61
  }
 }
