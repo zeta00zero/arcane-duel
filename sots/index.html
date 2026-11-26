@@ -24,8 +24,9 @@
     <div class="screen" id="scr-title">
       <div class="title-logo"><div class="t1">Songs of the</div><div class="t2">Symphony</div></div>
       <div class="menu" id="title-menu">
-        <button class="btn big" data-act="start">Start</button>
-        <button class="btn" data-act="options">Options</button>
+        <button class="btn big" data-act="story">Story Mode</button>
+        <button class="btn" data-act="free">Free Mission</button>
+        <button class="btn ghost" data-act="options">Options</button>
       </div>
       <div class="press" id="title-press">Click or press Enter</div>
       <div class="foot">Private prototype - v0.1</div>
@@ -43,7 +44,7 @@
       <div class="cs-art"><img id="cs-art" alt=""><div id="cs-soon" class="cs-soon">Coming Soon</div></div>
       <svg id="cs-svg" viewBox="0 0 1280 720"></svg>
       <div class="cs-head"><svg viewBox="0 0 420 22"><g stroke="#d8deec" fill="none" stroke-width="1.2"><path d="M8 11 H170 M250 11 H412"/><path d="M60 11 Q90 2 120 11 T180 11 M240 11 Q270 20 300 11 T360 11" stroke-width=".8" opacity=".8"/></g><g fill="#eef2ff"><path d="M210 2 L218 11 L210 20 L202 11Z"/><path d="M8 7 L12 11 L8 15 L4 11Z"/><path d="M412 7 L416 11 L412 15 L408 11Z"/><circle cx="185" cy="11" r="2"/><circle cx="235" cy="11" r="2"/></g></svg><div class="t" id="cs-head">Select your<span>Symphogear</span></div><svg viewBox="0 0 420 22"><g stroke="#d8deec" fill="none" stroke-width="1.2"><path d="M8 11 H170 M250 11 H412"/><path d="M60 11 Q90 2 120 11 T180 11 M240 11 Q270 20 300 11 T360 11" stroke-width=".8" opacity=".8"/></g><g fill="#eef2ff"><path d="M210 2 L218 11 L210 20 L202 11Z"/><path d="M8 7 L12 11 L8 15 L4 11Z"/><path d="M412 7 L416 11 L412 15 L408 11Z"/><circle cx="185" cy="11" r="2"/><circle cx="235" cy="11" r="2"/></g></svg></div>
-      <div class="cs-instr">Start the mission with the selected Symphogear.</div>
+      <div class="cs-instr" id="cs-instr">Start the mission with the selected Symphogear.</div>
       <div class="cs-info">
         <div class="cs-plate"><div id="cs-name" class="cs-name"></div></div>
         <div id="cs-jp" class="cs-jp"></div>
@@ -77,6 +78,7 @@
         <div class="vn-text" id="vn-text"></div>
         <div class="vn-next" id="vn-next">&#9660;</div>
       </div>
+      <button class="btn skip ghost" id="vn-back" data-act="back">Back</button>
       <button class="btn skip" id="vn-skip">Skip &raquo;</button>
     </div>
 
@@ -85,6 +87,16 @@
       <!-- <video> elements are created by VideoManager (one per file) -->
       <button class="btn skip" id="vid-skip">Skip &raquo;</button>
       <div id="vid-loading"><span class="spin"></span>Loading<span id="vid-pct"></span></div>
+    </div>
+
+    <!-- OPTIONS (full screen; sliders persist in localStorage via AudioManager) -->
+    <div class="screen" id="scr-options">
+      <h1 class="hdr">Options</h1>
+      <div class="opt-panel">
+        <div class="vol" id="opt-vol"></div>
+        <div class="hint" style="margin-top:22px;text-align:center">Volumes are saved on this device and apply to music, songs, SFX, voice and videos.</div>
+      </div>
+      <div class="bar"><button class="btn" data-act="back">Back</button></div>
     </div>
 
     <!-- OVERLAY (pause / game over / clear / options) -->
@@ -96,6 +108,7 @@
 <script src="js/data/sprite_meta.js"></script>
 <script src="js/data/characters.js"></script>
 <script src="js/data/missions.js"></script>
+<script src="js/ch1_stage.js"></script>
 <script src="js/input.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/game.js"></script>
