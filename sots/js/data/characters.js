@@ -36,7 +36,7 @@ SOTS_DATA.characters = {
       jump:    { sprite: 'transformed', rise: 'sprint3', fall: 'sprint4' },                   // airborne: rise / fall frames
       land:    { sprite: 'transformed', frames: ['up0'], durs: [7], loop: false },              // landing crouch
       dash:    { sprite: 'transformed', frames: ['dash0'], durs: [99], loop: false },          // v8: forward-leaning lunge (sprint3 leaned 13 deg) + afterimages + speed lines
-      charge:  { sprite: 'transformed', frames: ['charge0'], durs: [99], loop: false },      // holding K
+      charge:  { sprite: 'transformed', frames: ['charge0', 'charge1', 'charge2', 'charge3'], durs: [8, 8, 8, 8], loop: true },  // v10: staged 4-frame wind-up loop
       hit:     { sprite: 'transformed', frames: ['hurt0', 'hurt1'], durs: [8, 14], loop: false },
       down:    { sprite: 'transformed', frames: ['down0', 'down1', 'down2'], durs: [0, 34, 20], air: 'down0', loop: false },  // knockdown: down0 while airborne
       ko:      { sprite: 'transformed', frames: ['down0', 'down1'], air: 'down0', durs: [0, 999], loop: false },
@@ -60,7 +60,21 @@ SOTS_DATA.characters = {
       knee:   { frames: ['kick0', 'knee0', 'knee0', 'kick2'], durs: [4, 5, 5, 14], hit: [1, 2], dmg: 15, reach: [-10, 115], depth: 40, knock: 14, hitstun: 30, meter: 10, step: 64, stepT: 12, trail: true, launch: 5, chain: {}, sfx: 'heavy', shake: 8 },
       // K: tap = power punch (charge k = 0), held up to charge.cap ticks: step / dmg / knock grow linearly with k (0..1)
       heavyPunch: { frames: ['charge0', 'dpunch0', 'dpunch0', 'heavy3'], durs: [3, 5, 7, 15], hit: [1, 2], dmg: 15, reach: [-10, 125], depth: 42, knock: 13, hitstun: 30, meter: 10,
-                    step: 14, stepT: 15, chain: {}, sfx: 'heavy', shake: 7, charge: { cap: 60, min: 8, step: 170, dmg: 20, knock: 10, shake: 8 } },
+                    step: 14, stepT: 15, chain: {}, sfx: 'heavy', shake: 7,
+                    // hold K: staged L1 punch / L2 upper / L3 drill (frames were built in v8, never wired until v10)
+                    charge: { cap: 60, min: 8, levels: [
+                      { at: 0.34, move: 'charge_l1' },
+                      { at: 0.67, move: 'charge_l2' },
+                      { at: 1.00, move: 'charge_l3' }
+                    ] } },
+      // L1: rise -> punch tween -> charged punch (feet planted, small step)
+      charge_l1: { frames: ['rise0', 'tw_punch0', 'cpunch1', 'cpunch1', 'rise0'], durs: [4, 3, 5, 8, 12], hit: [2, 3], dmg: 22, reach: [-20, 140], depth: 46, knock: 18, hitstun: 34, meter: 12, step: 18, stepT: 12, chain: {}, sfx: 'heavy', shake: 10, fx: 'impact' },
+      // L2: uppercut launch (hop is the jump of the upper, not slash jitter)
+      charge_l2: { frames: ['rise0', 'tw_upper0', 'upper2', 'upper2', 'tw_upper1', 'upper3', 'rise0'], durs: [4, 3, 5, 8, 5, 6, 10], hit: [2, 3], dmg: 20, reach: [-10, 130], depth: 48, knock: 12, launch: 14, hop: 14, hitstun: 36, meter: 12, step: 8, stepT: 10, multi: true, chain: {}, sfx: 'launch', shake: 10, fx: 'uppercut' },
+      // L3: coil -> drill dash -> multi-hit drill -> skid / settle
+      charge_l3: { frames: ['coil0', 'coil1', 'coil2', 'drill0', 'drill1', 'drill2', 'drill3', 'drill4', 'drill5', 'drillhit0', 'drillhit1', 'drillhit2', 'tw_brake0', 'skid0', 'skid1', 'skid2', 'tw_settle0', 'settle0'],
+                   durs: [5, 5, 6, 3, 3, 3, 3, 3, 3, 4, 5, 6, 5, 5, 5, 6, 6, 10], hit: [6, 7, 8, 9, 10, 11], dmg: 8, reach: [-30, 170], depth: 48, knock: 10, hitstun: 28, meter: 4, step: 190, stepT: 34, trail: true, multi: true, fx: 'drill', chain: {}, sfx: 'heavy', shake: 8,
+                   finisher: { dmg: 18, knock: 16, shake: 12, hitstun: 36, meter: 10 } },
       // air moves (Space then J / K). air: true = lasts until landing; slam = shockwave when it lands
       jumpKick: { frames: ['kick0', 'kick1'],               durs: [4, 999],       hit: [1],    dmg: 9,  reach: [0, 115], depth: 40, knock: 7,   hitstun: 24, meter: 6, air: true, chain: {}, sfx: 'heavy', shake: 3 },
       // dive: wind-up (fist raised) -> plunge (heavy1 punch pose rotated fist-down, rot = radians per frame) -> GROUND SMASH
@@ -71,7 +85,28 @@ SOTS_DATA.characters = {
     starters: { light: 'light1', heavy: 'heavyPunch' },       // heavy starts in the 'charge' state (hold K), see game.js
     dashMoves: {},                                               // v8: no dash+J / dash+K strikes
     airMoves: { light: 'jumpKick', heavy: 'dive' },             // J / K while airborne
-    dash: { ticks: 22, speed: 15, cooldown: 26, iframes: 19 },  // Shift: ~0.37 s burst (~1.7x v4 distance), i-frames for the first 19 ticks, ~0.45 s cooldown
+    // staged v8 charge aura / fist glow (drawn behind + in front of her while holding K)
+    chargeAura: { x: 46, y: -89, rgb: [255, 190, 80] },
+    chargeFx: { sheet: 'fx_charge_v8', levels: [
+      { at: 0.34, row: 'L1' },
+      { at: 0.67, row: 'L2' },
+      { at: 1.00, row: 'L3' }
+    ] },
+    // short opt-in intros; same keys as Tsubasa, Hibiki frames only
+    transitions: {
+      'idle>walk': { frames: ['sprint0'], durs: [3] },
+      'walk>idle': { frames: ['sprint3', 'idle0'], durs: [3, 3] },
+      'idle>dash': { frames: ['sprint3'], durs: [3] },
+      'walk>dash': { frames: ['sprint3'], durs: [3] },
+      'dash>idle': { frames: ['dash0', 'sprint3'], durs: [3, 3] },
+      'dash>walk': { frames: ['dash0'], durs: [3] },
+      'dash>attack': { frames: ['dash0'], durs: [3] },
+      'attack>idle': { frames: ['__last__'], durs: [5] },
+      'attack>attack': { frames: ['__last__'], durs: [2] },
+      'charge>attack': { frames: ['charge0'], durs: [3] },
+      'land>idle': { frames: ['up0'], durs: [4] }
+    },
+    dash: { ticks: 22, speed: 15, cooldown: 26, iframes: 19, easeIn: 3 },  // Shift: ~0.37 s burst (~1.7x v4 distance), i-frames for the first 19 ticks, ~0.45 s cooldown
     jump: { vz: 13.5, air: 0.9 },                               // Space: launch speed, air control (x speed factor)
     transform: {
       phraseText: 'Balwisyall Nescell gungnir tron',     // shown on screen while the phrase mp3 plays
@@ -95,10 +130,13 @@ SOTS_DATA.characters = {
     id: 'tsubasa',
     name: 'Tsubasa',
     color: '#4a8dff',
-    select: { card: 'assets/img/tsubasa_transformed.png', title: 'Ame-no-Habakiri', blurb: 'A swordswoman who fights with her blade and her song.', previewAnim: 'idle', previewScale: 1.35 },
+    chargeAura: { x: -38, y: -168, rgb: [140, 210, 255], ring: '140,210,255' },
+    hudCrop: { x: 0.25, y: 16, size: 0.38 },   // face window in dagger select portrait (Hibiki default is 0.27, 20, 0.46)
+    select: { card: 'assets/img/tsubasa_select.png', title: 'Ame-no-Habakiri', blurb: 'A swordswoman who fights with her blade and her song.', previewAnim: 'idle', previewScale: 1.35 },
     portraits: {
       uniform: 'assets/img/tsubasa_uniform.png',
-      transformed: 'assets/img/tsubasa_transformed.png'
+      transformed: 'assets/img/tsubasa_select.png',   // song select, HUD, shared select-card art
+      reveal: 'assets/img/tsubasa_transformed.png'    // post-transform reveal only (greatsword)
     },
     sprites: {
       transformed: { sheet: 'tsubasa_anim', scale: 0.82 },
@@ -109,9 +147,9 @@ SOTS_DATA.characters = {
       walk:    { sprite: 'transformed', frames: ['run0', 'run1', 'run2', 'run3', 'run4', 'run5', 'run6', 'run7'],
                  stride: 424, dists: [60, 46, 30, 76, 60, 46, 30, 76], loop: true },
       jump:    { sprite: 'transformed', rise: 'run3', fall: 'run4' },
-      land:    { sprite: 'transformed', frames: ['up0'], durs: [7], loop: false },
+      land:    { sprite: 'transformed', frames: ['up0', 'idle0'], durs: [8, 5], loop: false, landTicks: 13 },
       dash:    { sprite: 'transformed', frames: ['dash0'], durs: [99], loop: false },
-      charge:  { sprite: 'transformed', frames: ['charge0'], durs: [99], loop: false },
+      charge:  { sprite: 'transformed', frames: ['charge0', 'charge1', 'charge2', 'charge3'], durs: [7, 7, 7, 7], loop: true },
       hit:     { sprite: 'transformed', frames: ['hurt0', 'hurt1'], durs: [8, 14], loop: false },
       down:    { sprite: 'transformed', frames: ['down0', 'down1', 'down2'], durs: [0, 34, 20], air: 'down0', loop: false },
       ko:      { sprite: 'transformed', frames: ['down0', 'down1'], air: 'down0', durs: [0, 999], loop: false },
@@ -122,23 +160,23 @@ SOTS_DATA.characters = {
     },
     stats: { hp: 120, speed: 5.4, depthSpeed: 3.4, invuln: 45 },
     moves: {
-      light1: { frames: ['light1_wu', 'light1_hit', 'light1_rec'], durs: [3, 4, 8], hit: [1], dmg: 6,  reach: [0, 110], depth: 34, knock: 2.5, hitstun: 18, meter: 5, step: 2, chain: { light: 'light2' }, sfx: 'light' },
-      light2: { frames: ['light2_wu', 'light2_hit', 'light2_rec'], durs: [3, 4, 9], hit: [1], dmg: 7,  reach: [0, 120], depth: 34, knock: 3,   hitstun: 18, meter: 5, step: 3, chain: { light: 'c1_upper', heavy: 'c1_upper' }, sfx: 'light' },
+      light1: { frames: ['light1_wu', 'light1_mid', 'light1_hit', 'light1_rec'], durs: [3, 3, 4, 8], hit: [2], dmg: 6,  reach: [0, 110], depth: 34, knock: 2.5, hitstun: 18, meter: 5, step: 2, chain: { light: 'light2' }, sfx: 'light' },
+      light2: { frames: ['light2_wu', 'light2_mid', 'light2_hit', 'light2_rec'], durs: [3, 3, 4, 9], hit: [2], dmg: 7,  reach: [0, 120], depth: 34, knock: 3,   hitstun: 18, meter: 5, step: 3, chain: { light: 'c1_upper', heavy: 'c1_upper' }, sfx: 'light' },
       // Combo 1 (L L H H): after two lights, upper then spin
-      c1_upper: { frames: ['upper_wu', 'upper_hit', 'upper_hit', 'upper_rec'], durs: [6, 4, 6, 10], hit: [1], dmg: 16, reach: [0, 130], depth: 40, knock: 16, hitstun: 32, meter: 10, step: 8, launch: 6, hop: 8, chain: { heavy: 'c1_spin' }, sfx: 'heavy', shake: 9 },
-      c1_spin:  { frames: ['spin_a', 'spin_b', 'spin_b', 'spin_rec'], durs: [5, 4, 6, 12], hit: [0, 1], dmg: 18, reach: [-20, 140], depth: 44, knock: 16, hitstun: 32, meter: 10, step: 12, trail: true, multi: true, chain: {}, sfx: 'heavy', shake: 10 },
+      c1_upper: { frames: ['upper_wu', 'upper_mid', 'upper_hit', 'upper_rec'], durs: [5, 4, 5, 12], hit: [2], dmg: 16, reach: [0, 130], depth: 40, knock: 16, hitstun: 32, meter: 10, step: 6, launch: 6, chain: { heavy: 'c1_spin' }, sfx: 'heavy', shake: 9 },
+      c1_spin:  { frames: ['spin_a', 'spin_mid', 'spin_b', 'spin_rec'], durs: [4, 4, 5, 12], hit: [0, 1, 2], dmg: 18, reach: [-20, 140], depth: 44, knock: 16, hitstun: 32, meter: 10, step: 12, trail: true, multi: true, chain: {}, sfx: 'heavy', shake: 10 },
       // Combo 2 (H H H): tap K starts here; hold K uses charge.levels (L1 / L2 / L3)
-      c2_upper: { frames: ['upper_wu', 'upper_hit', 'upper_hit', 'upper_rec'], durs: [6, 4, 6, 10], hit: [1], dmg: 16, reach: [0, 130], depth: 40, knock: 16, hitstun: 32, meter: 10, step: 8, launch: 6, hop: 8, chain: { heavy: 'c2_down' }, sfx: 'heavy', shake: 9,
+      c2_upper: { frames: ['upper_wu', 'upper_mid', 'upper_hit', 'upper_rec'], durs: [5, 4, 5, 12], hit: [2], dmg: 16, reach: [0, 130], depth: 40, knock: 16, hitstun: 32, meter: 10, step: 6, launch: 6, chain: { heavy: 'c2_down' }, sfx: 'heavy', shake: 9,
                   charge: { cap: 60, min: 8, levels: [
                     { at: 0.34, move: 'charge_l1' },
                     { at: 0.67, move: 'charge_l2' },
                     { at: 1.00, move: 'charge_l3' }
                   ] } },
-      c2_down:  { frames: ['down_wu', 'down_mid', 'down_fin', 'light1_rec'], durs: [6, 4, 6, 10], hit: [1, 2], dmg: 18, reach: [0, 140], depth: 42, knock: 14, hitstun: 30, meter: 10, step: 8, multi: true, chain: { heavy: 'c2_curve' }, sfx: 'heavy', shake: 9 },
-      c2_curve: { frames: ['curve_wu', 'curve_hit', 'curve_hit', 'light1_rec'], durs: [6, 4, 8, 10], hit: [1], dmg: 20, reach: [-10, 150], depth: 44, knock: 18, hitstun: 34, meter: 12, step: 10, chain: {}, sfx: 'heavy', shake: 10 },
-      charge_l1: { frames: ['l1_wu', 'l1_hit', 'l1_hit', 'l1_fol'], durs: [6, 5, 7, 14], hit: [1, 2], dmg: 22, reach: [-20, 170], depth: 46, knock: 18, hitstun: 34, meter: 12, step: 16, stepT: 12, multi: true, chain: {}, sfx: 'heavy', shake: 10 },
+      c2_down:  { frames: ['down_wu', 'down_in', 'down_mid', 'down_fin', 'light1_rec'], durs: [5, 3, 4, 5, 10], hit: [2, 3], dmg: 18, reach: [0, 140], depth: 42, knock: 14, hitstun: 30, meter: 10, step: 8, multi: true, chain: { heavy: 'c2_curve' }, sfx: 'heavy', shake: 9 },
+      c2_curve: { frames: ['curve_wu', 'curve_mid', 'curve_hit', 'light1_rec'], durs: [5, 4, 6, 12], hit: [2], dmg: 20, reach: [-10, 150], depth: 44, knock: 18, hitstun: 34, meter: 12, step: 10, chain: {}, sfx: 'heavy', shake: 10 },
+      charge_l1: { frames: ['l1_wu', 'l1_mid', 'l1_hit', 'l1_fol'], durs: [5, 4, 8, 14], hit: [2], dmg: 22, reach: [-20, 170], depth: 46, knock: 18, hitstun: 34, meter: 12, step: 16, stepT: 12, chain: {}, sfx: 'heavy', shake: 10 },
       charge_l2: { frames: ['l2_launch', 'l2_launch', 'l2_launch', 'light1_rec'], durs: [5, 6, 8, 12], hit: [0, 1, 2], dmg: 20, reach: [-10, 140], depth: 48, knock: 12, launch: 14, hop: 16, hitstun: 36, meter: 12, step: 8, multi: true, chain: {}, sfx: 'launch', shake: 10 },
-      charge_l3: { frames: ['l3_in', 'l3_in_b', 'l3_back', 'light1_rec'], durs: [6, 8, 8, 12], hit: [0, 1], dmg: 24, reach: [-30, 160], depth: 48, knock: 16, hitstun: 36, meter: 14, step: 140, stepT: 14, trail: true, multi: true, chain: {}, sfx: 'heavy', shake: 12 },
+      charge_l3: { frames: ['l3_in', 'l3_in_b', 'l3_back', 'light1_rec'], durs: [6, 8, 8, 12], hit: [0, 1], dmg: 24, reach: [-30, 160], depth: 48, knock: 16, hitstun: 36, meter: 14, step: 140, stepT: 14, trail: true, multi: true, fx: 'fire', chain: {}, sfx: 'heavy', shake: 12 },
       jumpKick: { frames: ['light2_hit', 'spin_a'],               durs: [4, 999], hit: [1], dmg: 9,  reach: [0, 120], depth: 40, knock: 7, hitstun: 24, meter: 6, air: true, chain: {}, sfx: 'heavy', shake: 3 },
       dive:     { frames: ['upper_wu', 'down_mid'],               durs: [7, 999], hit: [1], dmg: 12, reach: [-30, 100], depth: 44, knock: 4, hitstun: 28, meter: 8, air: true, dive: 26,
                   rot: [0, 0], landPose: 'charge0', landTicks: 16,
@@ -147,8 +185,23 @@ SOTS_DATA.characters = {
     starters: { light: 'light1', heavy: 'c2_upper' },
     dashMoves: {},
     airMoves: { light: 'jumpKick', heavy: 'dive' },
-    dash: { ticks: 22, speed: 15, cooldown: 26, iframes: 19 },
+    dash: { ticks: 22, speed: 15, cooldown: 26, iframes: 19, easeIn: 3 },
     jump: { vz: 13.5, air: 0.9 },
+    // Optional move-to-move intros (Hibiki omits this and keeps the old snaps).
+    // frames: '__last__' = the pose that was on screen when the switch happened.
+    transitions: {
+      'idle>walk': { frames: ['run0'], durs: [3] },
+      'walk>idle': { frames: ['run3', 'idle0'], durs: [3, 3] },
+      'walk>dash': { frames: ['dash_in'], durs: [3] },
+      'idle>dash': { frames: ['dash_in'], durs: [3] },
+      'dash>idle': { frames: ['dash_in', 'run3'], durs: [3, 4] },
+      'dash>walk': { frames: ['dash_in'], durs: [3] },
+      'dash>attack': { frames: ['dash_in'], durs: [3] },
+      'attack>idle': { frames: ['__last__'], durs: [5] },
+      'attack>attack': { frames: ['__last__'], durs: [2] },
+      'charge>attack': { frames: ['charge0'], durs: [2] },
+      'land>idle': { frames: ['idle0'], durs: [4] }
+    },
     transform: {
       phraseText: 'Imyuteus Ame-no-Habakiri tron',
       phraseAudio: 'assets/audio/tsubasa_transform_phrase.mp3',
@@ -188,7 +241,7 @@ SOTS_DATA.roster = {
   slots: [
     { id: 'hibiki',  name: 'Hibiki Tachibana',        jp: '立花 響',     color: '#ff9a2a', art: 'assets/img/chars/hibiki.webp',  face: 'assets/img/chars/hibiki_bust.webp', preview: 'assets/img/chars/hibiki_preview.jpg', hoverVoice: 'assets/audio/hibiki_hover.mp3', petalY: 0.40,
       blurb: 'A cheerful high-school girl who wields the Gungnir Symphogear.' },
-    { id: 'tsubasa', artFx: { s: 1.3, y: -95 }, petalX: -0.10,  name: 'Tsubasa Kazanari',        jp: '風鳴 翼',     color: '#4a8dff', art: 'assets/img/chars/tsubasa.webp', face: 'assets/img/chars/tsubasa_bust.webp', preview: 'assets/img/chars/tsubasa_preview.jpg', hoverVoice: 'assets/audio/tsubasa_hover.mp3',
+    { id: 'tsubasa',  name: 'Tsubasa Kazanari',        jp: '風鳴 翼',     color: '#4a8dff', art: 'assets/img/chars/tsubasa.webp', face: 'assets/img/chars/tsubasa_bust.webp', preview: 'assets/img/chars/tsubasa_preview.jpg', hoverVoice: 'assets/audio/tsubasa_hover.mp3',
       blurb: 'A top idol singer and veteran wielder of the Ame-no-Habakiri Symphogear.' },
     { id: 'chris', artFx: { s: 1.3, y: -169 }, petalY: 0.47,    name: 'Chris Yukine',            jp: '雪音 クリス', color: '#ff3b4a', art: 'assets/img/chars/chris.webp',   face: 'assets/img/chars/chris_bust.webp',
       blurb: 'A tough, sharp-tongued girl who wields the Ichii-Bal Symphogear.' },
@@ -230,5 +283,22 @@ SOTS_DATA.enemies = {
     hp: 420, speed: 1.1, width: 150, weight: 4, armor: true, boss: true,
     attack: { range: 150, windup: 46, lunge: 18, lungeSpeed: 6, dmg: 16, cooldown: [80, 130], shake: 10, knockdown: 0.5 },   // knockdown = chance a hit floors Hibiki
     dust: ['#2b2b2b', '#444', '#5a5550', '#1a1a1a', '#77706a']
+  },
+  flying_armor: {
+    name: 'Flying Armor Noise', sheet: 'ch1/flying_armor_sheet', frame: 'fly_idle0',
+    anims: {
+      fly: { frames: ['fly_idle0', 'fly_idle1', 'fly_idle2'], fps: 8, loop: true },
+      flap: { frames: ['fly_flap0', 'fly_flap1', 'fly_flap2'], fps: 10, loop: true },
+      swoop: { frames: ['swoop0', 'swoop1', 'swoop2', 'swoop3'], fps: 8, loop: false },
+      xform: { frames: ['xform0', 'xform1', 'xform2', 'xform3'], fps: 6, loop: false },
+      armor: { frames: ['armor_idle'], fps: 1, loop: true },
+      ram: { frames: ['armor_ram0', 'armor_ram1', 'armor_ram2'], fps: 10, loop: true },
+      hurt: { frames: ['hurt'], fps: 1 },
+      defeat: { frames: ['defeat0', 'defeat1', 'defeat2'], fps: 6, loop: false }
+    },
+    facesRight: false, scale: 1.0, flyingArmor: true,
+    hp: 680, speed: 2.2, width: 180, weight: 5, armor: true, boss: true,
+    attack: { range: 140, windup: 20, lunge: 28, lungeSpeed: 14, dmg: 18, cooldown: [90, 140], shake: 10, knockdown: 0.45 },
+    dust: ['#1a3a3a', '#2a5550', '#0a2020', '#5ad0c8', '#144']
   }
 };

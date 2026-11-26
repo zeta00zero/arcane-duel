@@ -15,18 +15,23 @@ html, body { margin: 0; height: 100%; background: #0a0710; overflow: hidden; fon
 .bar { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: center; gap: 30px; }
 
 /* title */
-#scr-title { background: #0a0c22 url('../assets/img/title_v5.jpg') center/cover; }
-.title-logo { position: absolute; left: 27px; top: 178px; width: 775px; height: 215px; background: url('../assets/img/title_logo.png') left top/contain no-repeat; }
+#scr-title { background: #0a0c22 url('../assets/img/title_v6.jpg') center/cover; }
+.title-logo { position: absolute; left: 28px; top: 168px; width: 520px; height: 144px; background: url('../assets/img/title_logo.png') left top/contain no-repeat; }
 .title-logo .t1, .title-logo .t2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }   /* text kept for screen readers; logo is the image */
 .title-logo .t1 { font-size: 46px; color: #ffe9c2; text-shadow: 0 3px 0 #7a2a08; }
 .title-logo .t2 { font-size: 112px; line-height: .9; font-weight: 700; color: #fff; text-shadow: 0 6px 0 #e0561a, 0 10px 0 #7a2a08, 0 0 40px #ffb04a; }
-.menu { position: absolute; left: 110px; top: 440px; display: none; flex-direction: column; gap: 18px; align-items: flex-start; }
+.menu { position: absolute; left: 64px; top: 336px; display: none; flex-direction: column; gap: 10px; align-items: flex-start; }
+.menu .btn { font-size: 24px; padding: 8px 26px; }
+.menu .btn.big { font-size: 28px; padding: 10px 32px; }
 .menu.on { display: flex; }
-.press { position: absolute; left: 90px; top: 450px; font-size: 32px; animation: blink 1.1s infinite; text-shadow: 0 3px 0 #000; }
+.press { position: absolute; left: 48px; top: 400px; font-size: 32px; animation: blink 1.1s infinite; text-shadow: 0 3px 0 #000; }
 .foot { position: absolute; bottom: 14px; right: 20px; font-size: 16px; opacity: .7; }
 @keyframes blink { 50% { opacity: .2; } }
 
 /* lists */
+#scr-options { background: #0a0c22 url('../assets/img/title_v6.jpg') center/cover; }
+.opt-panel { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-46%); min-width: 560px; padding: 36px 44px; background: linear-gradient(#2a1830f2, #120a18f2); border: 3px solid #ffb04a; border-radius: 16px; box-shadow: 0 0 40px #ff8a2a55; }
+#vn-back { right: auto; left: 20px; }
 #scr-missions, #scr-songs, #scr-chars { background: radial-gradient(circle at 30% 30%, #4a2330, #120a18 70%); }
 .list { display: flex; flex-direction: column; gap: 14px; }
 #mission-list { position: absolute; top: 140px; left: 240px; right: 240px; }
@@ -36,6 +41,7 @@ html, body { margin: 0; height: 100%; background: #0a0710; overflow: hidden; fon
 .item .sub { font-size: 18px; opacity: .8; }
 .item .grow { flex: 1; }
 .item.locked { opacity: .4; cursor: default; }
+.item .tag { font-size: 18px; letter-spacing: 1px; color: #ffe08a; border: 2px solid #ffe08a88; border-radius: 8px; padding: 4px 10px; text-transform: uppercase; white-space: nowrap; }
 .songs-wrap { position: absolute; top: 120px; left: 60px; right: 60px; bottom: 110px; display: flex; gap: 40px; }
 .songs-portrait { width: 300px; position: relative; }
 .songs-portrait img { height: 470px; display: block; margin: 0 auto; filter: drop-shadow(0 0 12px #ff8a2a66); }
@@ -148,7 +154,7 @@ body, button, input { font-variant-ligatures: none; font-feature-settings: "liga
 .cs-info .cs-blurb { font-size: 17px; line-height: 1.4; color: #eef0f8; text-align: center; margin: 0; }
 .cs-move { font-family: 'MarcellusSC', Georgia, serif; font-size: 21px; color: #f2c64a; margin: 10px 0 10px; text-shadow: 0 0 8px #c8901a88; }
 .cs-prev { position: relative; height: 150px; border: 2px solid #8a8ea0; background: #06082a; overflow: hidden; box-shadow: inset 0 0 20px #000; }
-.cs-prev img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cs-prev img, .cs-prev video { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; }
 .cs-prev .cs-prev-soon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 22px 'MarcellusSC', Georgia, serif; color: #8a90b0;
   background: repeating-linear-gradient(135deg, #10143a 0 10px, #0c1030 10px 20px); }
 .cs-keys { position: absolute; right: 30px; bottom: 18px; display: flex; gap: 28px; z-index: 3; }
